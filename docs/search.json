@@ -1,16 +1,72 @@
 [
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Home",
+    "objectID": "2_linear_regression_tidymodels/doc.html",
+    "href": "2_linear_regression_tidymodels/doc.html",
+    "title": "Tidymodels Linear Regression",
     "section": "",
-    "text": "To learn more about Quarto websites visit https://quarto.org/docs/websites.\n\n1 + 1\n\n[1] 2"
+    "text": "We will demonstrate how to fit a linear regression model with the iris dataset.\nFirst we will load the data.\n\nlibrary(knitr)\nlibrary(tidyverse)\n\ndata(iris)\n\niris = iris |>\n  rename_with(~ tolower(gsub(\".\", \"_\", .x, fixed = TRUE)))\n\nNext, we will visualise the data."
   },
   {
-    "objectID": "about.html",
-    "href": "about.html",
-    "title": "Home",
+    "objectID": "2_linear_regression_tidymodels/doc.html#regression",
+    "href": "2_linear_regression_tidymodels/doc.html#regression",
+    "title": "Tidymodels Linear Regression",
+    "section": "Regression",
+    "text": "Regression\nNext we will fit a linear regression model.\n\n\n\nCall:\nlm(formula = petal_width ~ petal_length, data = iris)\n\nResiduals:\n     Min       1Q   Median       3Q      Max \n-0.56515 -0.12358 -0.01898  0.13288  0.64272 \n\nCoefficients:\n              Estimate Std. Error t value Pr(>|t|)    \n(Intercept)  -0.363076   0.039762  -9.131  4.7e-16 ***\npetal_length  0.415755   0.009582  43.387  < 2e-16 ***\n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\nResidual standard error: 0.2065 on 148 degrees of freedom\nMultiple R-squared:  0.9271,    Adjusted R-squared:  0.9266 \nF-statistic:  1882 on 1 and 148 DF,  p-value: < 2.2e-16\n\n\nNext, we will view some diagnostics."
+  },
+  {
+    "objectID": "2_linear_regression_tidymodels/doc.html#session-information",
+    "href": "2_linear_regression_tidymodels/doc.html#session-information",
+    "title": "Tidymodels Linear Regression",
+    "section": "Session Information",
+    "text": "Session Information\n\n\nR version 4.2.1 (2022-06-23)\nPlatform: x86_64-pc-linux-gnu (64-bit)\nRunning under: Ubuntu 20.04.5 LTS\n\nMatrix products: default\nBLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.9.0\nLAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.9.0\n\nlocale:\n [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              \n [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    \n [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   \n [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 \n [9] LC_ADDRESS=C               LC_TELEPHONE=C            \n[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       \n\nattached base packages:\n[1] stats     graphics  grDevices utils     datasets  methods   base     \n\nother attached packages:\n [1] forcats_0.5.2   stringr_1.4.1   dplyr_1.0.10    purrr_0.3.5    \n [5] readr_2.1.3     tidyr_1.2.1     tibble_3.1.8    ggplot2_3.3.6  \n [9] tidyverse_1.3.2 knitr_1.40     \n\nloaded via a namespace (and not attached):\n [1] tidyselect_1.2.0    xfun_0.34           haven_2.5.1        \n [4] gargle_1.2.1        colorspace_2.0-3    vctrs_0.5.0        \n [7] generics_0.1.3      htmltools_0.5.3     yaml_2.3.6         \n[10] utf8_1.2.2          rlang_1.0.6         pillar_1.8.1       \n[13] withr_2.5.0         glue_1.6.2          DBI_1.1.3          \n[16] dbplyr_2.2.1        modelr_0.1.9        readxl_1.4.1       \n[19] lifecycle_1.0.3     munsell_0.5.0       gtable_0.3.1       \n[22] cellranger_1.1.0    rvest_1.0.3         htmlwidgets_1.5.4  \n[25] evaluate_0.17       tzdb_0.3.0          fastmap_1.1.0      \n[28] fansi_1.0.3         broom_1.0.1         backports_1.4.1    \n[31] scales_1.2.1        googlesheets4_1.0.1 jsonlite_1.8.3     \n[34] fs_1.5.2            hms_1.1.2           digest_0.6.30      \n[37] stringi_1.7.8       grid_4.2.1          cli_3.4.1          \n[40] tools_4.2.1         magrittr_2.0.3      crayon_1.5.2       \n[43] pkgconfig_2.0.3     ellipsis_0.3.2      xml2_1.3.3         \n[46] reprex_2.0.2        googledrive_2.0.0   lubridate_1.8.0    \n[49] assertthat_0.2.1    rmarkdown_2.17      httr_1.4.4         \n[52] rstudioapi_0.14     R6_2.5.1            compiler_4.2.1"
+  },
+  {
+    "objectID": "1_linear_regression/doc.html",
+    "href": "1_linear_regression/doc.html",
+    "title": "Linear Regression",
     "section": "",
-    "text": "To learn more about Quarto websites visit https://quarto.org/docs/websites.\n\n1 + 1\n\n[1] 2"
+    "text": "We will demonstrate how to fit a linear regression model to the iris dataset.\nFirst we will load the data.\n\nlibrary(knitr)\nlibrary(tidyverse)\n\ndata(iris)\n\niris = iris |>\n  rename_with(~ tolower(gsub(\".\", \"_\", .x, fixed = TRUE)))\n\nNext, we will visualise the data."
+  },
+  {
+    "objectID": "1_linear_regression/doc.html#regression",
+    "href": "1_linear_regression/doc.html#regression",
+    "title": "Linear Regression",
+    "section": "Regression",
+    "text": "Regression\nNext we will fit a linear regression model.\n\n\n\nCall:\nlm(formula = petal_width ~ petal_length, data = iris)\n\nResiduals:\n     Min       1Q   Median       3Q      Max \n-0.56515 -0.12358 -0.01898  0.13288  0.64272 \n\nCoefficients:\n              Estimate Std. Error t value Pr(>|t|)    \n(Intercept)  -0.363076   0.039762  -9.131  4.7e-16 ***\npetal_length  0.415755   0.009582  43.387  < 2e-16 ***\n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\nResidual standard error: 0.2065 on 148 degrees of freedom\nMultiple R-squared:  0.9271,    Adjusted R-squared:  0.9266 \nF-statistic:  1882 on 1 and 148 DF,  p-value: < 2.2e-16\n\n\nNext, we will view some diagnostics."
+  },
+  {
+    "objectID": "1_linear_regression/doc.html#session-information",
+    "href": "1_linear_regression/doc.html#session-information",
+    "title": "Linear Regression",
+    "section": "Session Information",
+    "text": "Session Information\n\n\nR version 4.2.1 (2022-06-23)\nPlatform: x86_64-pc-linux-gnu (64-bit)\nRunning under: Ubuntu 20.04.5 LTS\n\nMatrix products: default\nBLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.9.0\nLAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.9.0\n\nlocale:\n [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              \n [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    \n [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   \n [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 \n [9] LC_ADDRESS=C               LC_TELEPHONE=C            \n[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       \n\nattached base packages:\n[1] stats     graphics  grDevices utils     datasets  methods   base     \n\nother attached packages:\n [1] forcats_0.5.2   stringr_1.4.1   dplyr_1.0.10    purrr_0.3.5    \n [5] readr_2.1.3     tidyr_1.2.1     tibble_3.1.8    ggplot2_3.3.6  \n [9] tidyverse_1.3.2 knitr_1.40     \n\nloaded via a namespace (and not attached):\n [1] tidyselect_1.2.0    xfun_0.34           haven_2.5.1        \n [4] gargle_1.2.1        colorspace_2.0-3    vctrs_0.5.0        \n [7] generics_0.1.3      htmltools_0.5.3     yaml_2.3.6         \n[10] utf8_1.2.2          rlang_1.0.6         pillar_1.8.1       \n[13] withr_2.5.0         glue_1.6.2          DBI_1.1.3          \n[16] dbplyr_2.2.1        modelr_0.1.9        readxl_1.4.1       \n[19] lifecycle_1.0.3     munsell_0.5.0       gtable_0.3.1       \n[22] cellranger_1.1.0    rvest_1.0.3         htmlwidgets_1.5.4  \n[25] evaluate_0.17       tzdb_0.3.0          fastmap_1.1.0      \n[28] fansi_1.0.3         broom_1.0.1         backports_1.4.1    \n[31] scales_1.2.1        googlesheets4_1.0.1 jsonlite_1.8.3     \n[34] fs_1.5.2            hms_1.1.2           digest_0.6.30      \n[37] stringi_1.7.8       grid_4.2.1          cli_3.4.1          \n[40] tools_4.2.1         magrittr_2.0.3      crayon_1.5.2       \n[43] pkgconfig_2.0.3     ellipsis_0.3.2      xml2_1.3.3         \n[46] reprex_2.0.2        googledrive_2.0.0   lubridate_1.8.0    \n[49] assertthat_0.2.1    rmarkdown_2.17      httr_1.4.4         \n[52] rstudioapi_0.14     R6_2.5.1            compiler_4.2.1"
+  },
+  {
+    "objectID": "2_linear_regression_mlflow/doc.html",
+    "href": "2_linear_regression_mlflow/doc.html",
+    "title": "MLFlow Linear Regression",
+    "section": "",
+    "text": "We will demonstrate how to fit a linear regression model package to the Star Wars dataset.\nSubsequently, we will track the experiment and deploy the model to an MLFlow server.\n\nif (!require(\"carrier\")) { install.packages(\"carrier\") }\n\nlibrary(carrier)\nlibrary(knitr)\nlibrary(mlflow)\nlibrary(tidyverse)\n\ndata = dplyr::starwars"
+  },
+  {
+    "objectID": "2_linear_regression_mlflow/doc.html#regression",
+    "href": "2_linear_regression_mlflow/doc.html#regression",
+    "title": "MLFlow Linear Regression",
+    "section": "Regression",
+    "text": "Regression\nNext we will fit a linear regression model.\n\n\n\nCall:\nlm(formula = petal_width ~ petal_length, data = iris)\n\nResiduals:\n     Min       1Q   Median       3Q      Max \n-0.56515 -0.12358 -0.01898  0.13288  0.64272 \n\nCoefficients:\n              Estimate Std. Error t value Pr(>|t|)    \n(Intercept)  -0.363076   0.039762  -9.131  4.7e-16 ***\npetal_length  0.415755   0.009582  43.387  < 2e-16 ***\n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\nResidual standard error: 0.2065 on 148 degrees of freedom\nMultiple R-squared:  0.9271,    Adjusted R-squared:  0.9266 \nF-statistic:  1882 on 1 and 148 DF,  p-value: < 2.2e-16\n\n\nNext, we will view some diagnostics."
+  },
+  {
+    "objectID": "2_linear_regression_mlflow/doc.html#session-information",
+    "href": "2_linear_regression_mlflow/doc.html#session-information",
+    "title": "MLFlow Linear Regression",
+    "section": "Session Information",
+    "text": "Session Information\n\n\nR version 4.2.1 (2022-06-23)\nPlatform: x86_64-pc-linux-gnu (64-bit)\nRunning under: Ubuntu 20.04.5 LTS\n\nMatrix products: default\nBLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.9.0\nLAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.9.0\n\nlocale:\n [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              \n [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    \n [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   \n [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 \n [9] LC_ADDRESS=C               LC_TELEPHONE=C            \n[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       \n\nattached base packages:\n[1] stats     graphics  grDevices utils     datasets  methods   base     \n\nother attached packages:\n [1] forcats_0.5.2   stringr_1.4.1   dplyr_1.0.10    purrr_0.3.5    \n [5] readr_2.1.3     tidyr_1.2.1     tibble_3.1.8    ggplot2_3.3.6  \n [9] tidyverse_1.3.2 mlflow_1.30.0   knitr_1.40      carrier_0.1.0  \n\nloaded via a namespace (and not attached):\n [1] httr_1.4.4          jsonlite_1.8.3      modelr_0.1.9       \n [4] assertthat_0.2.1    askpass_1.1         googlesheets4_1.0.1\n [7] cellranger_1.1.0    yaml_2.3.6          pillar_1.8.1       \n[10] backports_1.4.1     lattice_0.20-45     glue_1.6.2         \n[13] reticulate_1.26     digest_0.6.30       promises_1.2.0.1   \n[16] rvest_1.0.3         colorspace_2.0-3    htmltools_0.5.3    \n[19] httpuv_1.6.6        Matrix_1.4-1        pkgconfig_2.0.3    \n[22] broom_1.0.1         haven_2.5.1         scales_1.2.1       \n[25] processx_3.8.0      later_1.3.0         tzdb_0.3.0         \n[28] openssl_2.0.4       googledrive_2.0.0   generics_0.1.3     \n[31] ellipsis_0.3.2      swagger_3.33.1      withr_2.5.0        \n[34] cli_3.4.1           crayon_1.5.2        magrittr_2.0.3     \n[37] readxl_1.4.1        evaluate_0.17       ps_1.7.2           \n[40] fs_1.5.2            fansi_1.0.3         xml2_1.3.3         \n[43] tools_4.2.1         hms_1.1.2           gargle_1.2.1       \n[46] lifecycle_1.0.3     munsell_0.5.0       reprex_2.0.2       \n[49] compiler_4.2.1      forge_0.2.0         rlang_1.0.6        \n[52] grid_4.2.1          rstudioapi_0.14     htmlwidgets_1.5.4  \n[55] base64enc_0.1-3     rmarkdown_2.17      gtable_0.3.1       \n[58] DBI_1.1.3           R6_2.5.1            ini_0.3.1          \n[61] lubridate_1.8.0     fastmap_1.1.0       utf8_1.2.2         \n[64] zeallot_0.1.0       stringi_1.7.8       Rcpp_1.0.9         \n[67] vctrs_0.5.0         png_0.1-7           dbplyr_2.2.1       \n[70] tidyselect_1.2.0    xfun_0.34"
+  },
+  {
+    "objectID": "2_linear_regression_mlflow/doc.html#mlflow",
+    "href": "2_linear_regression_mlflow/doc.html#mlflow",
+    "title": "MLFlow Linear Regression",
+    "section": "MLFlow",
+    "text": "MLFlow"
   }
 ]

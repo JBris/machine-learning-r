@@ -1,0 +1,35 @@
+---
+title: "MLFlow Linear Regression"
+format:
+  html:
+    toc: true
+    html-math-method: katex
+    css: styles.css
+---
+
+## Star Wars Dataset
+
+We will demonstrate how to fit a linear regression model package to the Star Wars dataset.
+
+Subsequently, we will track the experiment and deploy the model to an MLFlow server.
+
+```{r setup, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = FALSE}
+
+if (!require("carrier")) { install.packages("carrier") }
+
+library(carrier)
+library(knitr)
+library(mlflow)
+library(tidyverse)
+
+data = dplyr::starwars
+```
+
+## MLFlow
+
+## Session Information
+
+```{r session-info, include = TRUE, echo = FALSE, message = FALSE, warning = TRUE, cache = FALSE}
+
+sessionInfo()
+```

@@ -1,0 +1,62 @@
+---
+title: "Linear Regression"
+format:
+  html:
+    toc: true
+    html-math-method: katex
+    css: styles.css
+---
+
+## Iris Dataset
+
+We will demonstrate how to fit a linear regression model to the iris dataset.
+
+First we will load the data.
+
+```{r setup, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = FALSE}
+
+library(knitr)
+library(tidyverse)
+
+data(iris)
+
+iris = iris |>
+  rename_with(~ tolower(gsub(".", "_", .x, fixed = TRUE)))
+```
+
+Next, we will visualise the data.
+
+```{r iris-plot, include = TRUE, echo = FALSE, message = FALSE, warning = TRUE, cache = TRUE}
+
+iris |>
+  ggplot(aes(petal_length, petal_width, colour = species)) + 
+  geom_point() +
+  geom_smooth() +
+  ggtitle("Petal Length against Petal Width by Species")
+```
+
+## Regression
+
+Next we will fit a linear regression model.
+
+```{r iris-lm, include = TRUE, echo = FALSE, message = FALSE, warning = TRUE, cache = TRUE}
+
+lm_mod = lm(petal_width ~ petal_length, data = iris)
+lm_mod |>
+  summary()
+```
+
+Next, we will view some diagnostics.
+
+```{r iris-diagnostics, include = TRUE, echo = FALSE, message = FALSE, warning = TRUE, cache = TRUE}
+
+par(mfrow=c(2,2)) 
+plot(lm_mod)
+```
+
+## Session Information
+
+```{r session-info, include = TRUE, echo = FALSE, message = FALSE, warning = TRUE, cache = FALSE}
+
+sessionInfo()
+```

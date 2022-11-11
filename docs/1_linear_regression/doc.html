@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Docker R MLOps - Home</title>
+<title>Docker R MLOps - Linear Regression</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -86,22 +86,23 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-html/quarto.js"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../2_linear_regression_mlflow/doc.html" rel="next">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -121,9 +122,23 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     "search-submit-button-title": "Submit"
   }
 }</script>
+<script type="application/json" class="js-hypothesis-config">
+{
+  "theme": "clean",
+  "openSidebar": false
+}
+</script>
+<script async="" src="https://hypothes.is/embed.js"></script>
 
 
+<link rel="stylesheet" href="../styles.css">
 <link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="Docker R MLOps - Linear Regression">
+<meta property="og:description" content="We will demonstrate how to fit a linear regression model to the iris dataset.">
+<meta property="og:site-name" content="Docker R MLOps">
+<meta name="twitter:title" content="Docker R MLOps - Linear Regression">
+<meta name="twitter:description" content="We will demonstrate how to fit a linear regression model to the iris dataset.">
+<meta name="twitter:card" content="summary">
 </head>
 
 <body class="nav-sidebar docked">
@@ -132,7 +147,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   <header id="quarto-header" class="headroom fixed-top">
   <nav class="quarto-secondary-nav" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
     <div class="container-fluid d-flex justify-content-between">
-      <h1 class="quarto-secondary-nav-title">Home</h1>
+      <h1 class="quarto-secondary-nav-title">Linear Regression</h1>
       <button type="button" class="quarto-btn-toggle btn" aria-label="Show secondary navigation">
         <i class="bi bi-chevron-right"></i>
       </button>
@@ -145,7 +160,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   <nav id="quarto-sidebar" class="sidebar collapse sidebar-navigation docked overflow-auto">
     <div class="pt-lg-2 mt-2 text-left sidebar-header">
     <div class="sidebar-title mb-0 py-0">
-      <a href="./">Docker R MLOps</a> 
+      <a href="../">Docker R MLOps</a> 
     </div>
       </div>
       <div class="mt-2 flex-shrink-0 align-items-center">
@@ -165,22 +180,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./index.html" class="sidebar-item-text sidebar-link">Home</a>
+  <a href="../1_linear_regression/doc.html" class="sidebar-item-text sidebar-link active">Linear Regression</a>
   </div>
 </li>
-      </ul>
-  </li>
-        <li class="sidebar-item sidebar-item-section">
-      <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">Layout</a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
-            <i class="bi bi-chevron-right ms-2"></i>
-          </a> 
-      </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./about.html" class="sidebar-item-text sidebar-link active">Home</a>
+  <a href="../2_linear_regression_mlflow/doc.html" class="sidebar-item-text sidebar-link">MLFlow Linear Regression</a>
   </div>
 </li>
       </ul>
@@ -190,14 +195,22 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </nav>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#iris-dataset" id="toc-iris-dataset" class="nav-link active" data-scroll-target="#iris-dataset">Iris Dataset</a></li>
+  <li><a href="#regression" id="toc-regression" class="nav-link" data-scroll-target="#regression">Regression</a></li>
+  <li><a href="#session-information" id="toc-session-information" class="nav-link" data-scroll-target="#session-information">Session Information</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title d-none d-lg-block">Home</h1>
+<h1 class="title d-none d-lg-block">Linear Regression</h1>
 </div>
 
 
@@ -211,16 +224,110 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 </header>
 
-<p>This is a Quarto website.</p>
-<p>To learn more about Quarto websites visit <a href="https://quarto.org/docs/websites" class="uri">https://quarto.org/docs/websites</a>.</p>
+<section id="iris-dataset" class="level2">
+<h2 class="anchored" data-anchor-id="iris-dataset">Iris Dataset</h2>
+<p>We will demonstrate how to fit a linear regression model to the iris dataset.</p>
+<p>First we will load the data.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(iris)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>iris <span class="ot">=</span> iris <span class="sc">|&gt;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename_with</span>(<span class="sc">~</span> <span class="fu">tolower</span>(<span class="fu">gsub</span>(<span class="st">"."</span>, <span class="st">"_"</span>, .x, <span class="at">fixed =</span> <span class="cn">TRUE</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Next, we will visualise the data.</p>
+<div class="cell" data-hash="doc_cache/html/iris-plot_b83698cb5bada095ccd8b4d5425d6fae">
+<div class="cell-output-display">
+<p><img src="doc_files/figure-html/iris-plot-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="regression" class="level2">
+<h2 class="anchored" data-anchor-id="regression">Regression</h2>
+<p>Next we will fit a linear regression model.</p>
+<div class="cell" data-hash="doc_cache/html/iris-lm_2759fa39b13e964bdf432b362ced5eef">
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 2</code></pre>
+<pre><code>
+Call:
+lm(formula = petal_width ~ petal_length, data = iris)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.56515 -0.12358 -0.01898  0.13288  0.64272 
+
+Coefficients:
+              Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)  -0.363076   0.039762  -9.131  4.7e-16 ***
+petal_length  0.415755   0.009582  43.387  &lt; 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 0.2065 on 148 degrees of freedom
+Multiple R-squared:  0.9271,    Adjusted R-squared:  0.9266 
+F-statistic:  1882 on 1 and 148 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+</div>
+<p>Next, we will view some diagnostics.</p>
+<div class="cell" data-hash="doc_cache/html/iris-diagnostics_5d2106aadae1e23b8afa428e6140dd17">
+<div class="cell-output-display">
+<p><img src="doc_files/figure-html/iris-diagnostics-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="session-information" class="level2">
+<h2 class="anchored" data-anchor-id="session-information">Session Information</h2>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>R version 4.2.1 (2022-06-23)
+Platform: x86_64-pc-linux-gnu (64-bit)
+Running under: Ubuntu 20.04.5 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.9.0
+LAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.9.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] forcats_0.5.2   stringr_1.4.1   dplyr_1.0.10    purrr_0.3.5    
+ [5] readr_2.1.3     tidyr_1.2.1     tibble_3.1.8    ggplot2_3.3.6  
+ [9] tidyverse_1.3.2 knitr_1.40     
+
+loaded via a namespace (and not attached):
+ [1] tidyselect_1.2.0    xfun_0.34           haven_2.5.1        
+ [4] gargle_1.2.1        colorspace_2.0-3    vctrs_0.5.0        
+ [7] generics_0.1.3      htmltools_0.5.3     yaml_2.3.6         
+[10] utf8_1.2.2          rlang_1.0.6         pillar_1.8.1       
+[13] withr_2.5.0         glue_1.6.2          DBI_1.1.3          
+[16] dbplyr_2.2.1        modelr_0.1.9        readxl_1.4.1       
+[19] lifecycle_1.0.3     munsell_0.5.0       gtable_0.3.1       
+[22] cellranger_1.1.0    rvest_1.0.3         htmlwidgets_1.5.4  
+[25] evaluate_0.17       tzdb_0.3.0          fastmap_1.1.0      
+[28] fansi_1.0.3         broom_1.0.1         backports_1.4.1    
+[31] scales_1.2.1        googlesheets4_1.0.1 jsonlite_1.8.3     
+[34] fs_1.5.2            hms_1.1.2           digest_0.6.30      
+[37] stringi_1.7.8       grid_4.2.1          cli_3.4.1          
+[40] tools_4.2.1         magrittr_2.0.3      crayon_1.5.2       
+[43] pkgconfig_2.0.3     ellipsis_0.3.2      xml2_1.3.3         
+[46] reprex_2.0.2        googledrive_2.0.0   lubridate_1.8.0    
+[49] assertthat_0.2.1    rmarkdown_2.17      httr_1.4.4         
+[52] rstudioapi_0.14     R6_2.5.1            compiler_4.2.1     </code></pre>
 </div>
 </div>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -321,6 +428,15 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   }
 });
 </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../2_linear_regression_mlflow/doc.html" class="pagination-link">
+        <span class="nav-page-text">MLFlow Linear Regression</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
 </div> <!-- /content -->
 
 

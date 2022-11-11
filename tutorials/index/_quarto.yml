@@ -3,17 +3,28 @@ project:
 
 website:
   title: "Docker R MLOps"
+  page-navigation: true
+  open-graph: true
+  twitter-card: true
+  cookie-consent: false
   sidebar:
     style: "docked"
     search: true
     contents:
       - section: "Basics"
         contents:
-          - index.qmd
-      - section: "Layout"
-        contents:
-          - about.qmd
+          - 1_linear_regression/doc.qmd
+          - 2_linear_regression_mlflow/doc.qmd
 
+  comments: 
+    hypothesis:
+      theme: clean
+      openSidebar: false
+      
+theme:
+  light: flatly
+  dark: darkly
+  
 format:
   html:
     theme: cosmo

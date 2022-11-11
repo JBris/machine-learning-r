@@ -177,3 +177,4 @@ tutorials/*
 !tutorials/index
 tutorials/index/.quarto/
 tutorials/index/_site/
+tutorials/index/*/*/figure-html
