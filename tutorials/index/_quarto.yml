@@ -1,0 +1,24 @@
+project:
+  type: website
+
+website:
+  title: "Docker R MLOps"
+  sidebar:
+    style: "docked"
+    search: true
+    contents:
+      - section: "Basics"
+        contents:
+          - index.qmd
+      - section: "Layout"
+        contents:
+          - about.qmd
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+
+editor: visual
+

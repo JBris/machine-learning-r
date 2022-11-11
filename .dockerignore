@@ -1,0 +1,11 @@
+# R
+.Renviron
+r_home
+
+# Data
+data
+.git
+
+# RStudio
+tutorials/*
+!tutorials/index

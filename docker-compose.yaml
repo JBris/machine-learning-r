@@ -1,6 +1,27 @@
-version: "3.5"
+version: "3.7"
 
 services:
+
+  rstudio:
+    image: "ghcr.io/${CONTAINER_REG_USER}/${CONTAINER_TIDYMODELS_REG_NAME}:latest"
+    container_name: "${PROJECT_NAME}_rstudio"
+    hostname: rstudio
+    stop_grace_period: 60s
+    restart: always
+    environment:
+      USER: $R_STUDIO_USER
+      PASSWORD: $R_STUDIO_PASSWORD
+      ROOT: "TRUE"
+      DISABLE_AUTH: "TRUE"
+      R_SEED: $R_SEED
+    ports:
+      - ${R_STUDIO_PORT}:8787 
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./tutorials:/home/user
 
   mlflow:
     image: "ghcr.io/${CONTAINER_REG_USER}/${CONTAINER_MLFOW_REG_NAME}:latest"

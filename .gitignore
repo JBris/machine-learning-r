@@ -169,3 +169,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+#####################################################
+# RStudio
+
+tutorials/*
+!tutorials/index
