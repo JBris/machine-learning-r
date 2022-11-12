@@ -15,10 +15,10 @@ Subsequently, we will track the experiment and save the model to an MLFlow serve
 
 ```{r setup, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = FALSE}
 
-if (!require("carrier")) { install.packages("carrier") }
-
 library(carrier)
 library(knitr)
+library(reticulate)
+use_condaenv("r-mlflow-1.30.0")
 library(mlflow)
 mlflow::mlflow_set_tracking_uri("http://mlflow:5000")
 library(tidyverse)
@@ -26,6 +26,68 @@ library(tidyverse)
 data = dplyr::starwars
 data |>
   head()
+```
+
+## Minio
+
+We need to create a minio bucket. All of our files will be saved into this bucket.
+
+```{python minio-bucket, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+from minio import Minio
+import json
+import os
+
+minioClient = Minio(
+  os.environ['MLFLOW_S3_ENDPOINT_URL'].split('//')[1],
+  access_key=os.environ['AWS_ACCESS_KEY_ID'],
+  secret_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+  secure = False
+)
+
+mlflow_names = [ bucket.name for bucket in minioClient.list_buckets() ]
+if 'mlflow' not in mlflow_names:
+  minioClient.make_bucket('mlflow')
+```
+
+Next, we set the bucket policy.
+
+```{python minio-policy, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+policy = {
+  "Version":"2012-10-17",
+  "Statement":[
+    {
+      "Sid":"",
+      "Effect":"Allow",
+      "Principal":{"AWS":"*"},
+      "Action":"s3:GetBucketLocation",
+      "Resource":"arn:aws:s3:::mlflow"
+    },
+    {
+      "Sid":"",
+      "Effect":"Allow",
+      "Principal":{"AWS":"*"},
+      "Action":"s3:ListBucket",
+      "Resource":"arn:aws:s3:::mlflow"
+    },
+    {
+      "Sid":"",
+      "Effect":"Allow",
+      "Principal":{"AWS":"*"},
+      "Action":"s3:GetObject",
+      "Resource":"arn:aws:s3:::mlflow/*"
+    },
+    {
+      "Sid":"",
+      "Effect":"Allow",
+      "Principal":{"AWS":"*"},
+      "Action":"s3:PutObject",
+      "Resource":"arn:aws:s3:::mlflow/*"
+    }
+  ]}
+
+minioClient.set_bucket_policy('mlflow', json.dumps(policy))
 ```
 
 ## MLFlow
@@ -46,8 +108,9 @@ We will next execute an MLFlow run.
 
 ```{r mlflow-run, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
 
+s3_bucket = "s3://mlflow/sw_lm"
 # Begin the run.
-experiment = mlflow_set_experiment(experiment_name = "sw_lm") 
+experiment = mlflow_set_experiment(experiment_name = "sw_lm", artifact_location = s3_bucket) 
 run = mlflow_start_run(client = client)
 
 # Save the model.

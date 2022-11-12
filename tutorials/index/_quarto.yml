@@ -15,6 +15,9 @@ website:
         contents:
           - 1_linear_regression/doc.qmd
           - 2_linear_regression_mlflow/doc.qmd
+      - section: "Tidymodels"
+        contents:
+          - 3_tidy_linear_regression/doc.qmd
 
   comments: 
     hypothesis:
