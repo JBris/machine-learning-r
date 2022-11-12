@@ -169,15 +169,16 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
+doc_cache
 #####################################################
 # RStudio
 
 tutorials/*
 !tutorials/index
-tutorials/index/.quarto/
-tutorials/index/_site/
-tutorials/index/*/*/figure-html
+.quarto
+_site
+doc_cache
+doc_files
 
 #####################################################
 # MLFlow
