@@ -14,6 +14,7 @@ services:
       ROOT: "TRUE"
       DISABLE_AUTH: "TRUE"
       R_SEED: $R_SEED
+      MLFLOW_TRACKING_URI: $MLFLOW_TRACKING_URI
     ports:
       - ${R_STUDIO_PORT}:8787 
     ulimits:
@@ -22,7 +23,7 @@ services:
         hard: -1
     volumes:
       - ./tutorials:/home/user
-
+      
   mlflow:
     image: "ghcr.io/${CONTAINER_REG_USER}/${CONTAINER_MLFOW_REG_NAME}:latest"
     container_name: "${PROJECT_NAME}_mlflow"
@@ -34,12 +35,8 @@ services:
       MLFLOW_BACKEND_STORE_URI: $MLFLOW_BACKEND_STORE_URI
     ports:
       - ${MLFLOW_PORT}:5000
-    depends_on:
-      - postgres
-    volumes:
-      - ./data/mlflow:/mlflow
     command: >
-      mlflow server --serve-artifacts --host 0.0.0.0 --port 5000 --backend-store-uri "${MLFLOW_BACKEND_STORE_URI}" --default-artifact-root file:/mlflow/mlruns
+      mlflow server --serve-artifacts --host 0.0.0.0 --port 5000 --backend-store-uri "${MLFLOW_BACKEND_STORE_URI}"
 
   postgres:
     image: "postgres:${POSTGRES_TAG}"

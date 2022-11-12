@@ -11,7 +11,7 @@ format:
 
 We will demonstrate how to fit a linear regression model package to the Star Wars dataset.
 
-Subsequently, we will track the experiment and deploy the model to an MLFlow server.
+Subsequently, we will track the experiment and save the model to an MLFlow server. We use the *carrier* package to serialize the model.
 
 ```{r setup, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = FALSE}
 
@@ -20,12 +20,75 @@ if (!require("carrier")) { install.packages("carrier") }
 library(carrier)
 library(knitr)
 library(mlflow)
+mlflow::mlflow_set_tracking_uri("http://mlflow:5000")
 library(tidyverse)
 
 data = dplyr::starwars
+data |>
+  head()
 ```
 
 ## MLFlow
+
+We will first create a new model in the model registry.
+
+```{r mlflow-register, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+client = mlflow_client()
+tryCatch(
+  expr = {mlflow_delete_registered_model("sw_lm", client = client)},
+  error = function(x) {}
+)
+mlflow_create_registered_model("sw_lm", client = client, description = "Perform predictions using Star Wars characters.")
+```
+
+We will next execute an MLFlow run.
+
+```{r mlflow-run, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+# Begin the run.
+experiment = mlflow_set_experiment(experiment_name = "sw_lm") 
+run = mlflow_start_run(client = client)
+
+# Save the model.
+sw_lm = lm(height ~ mass, data = data)
+packaged_sw_lm = carrier::crate(
+    function(x) stats::predict.lm(sw_lm),
+    sw_lm = sw_lm
+)
+
+# Log params and metrics.
+mlflow_log_param("Intercept", sw_lm$coefficients["(Intercept)"], client = client, run_id = run$run_uuid)
+mlflow_log_param("mass", sw_lm$coefficients["mass"], client = client, run_id = run$run_uuid)
+mlflow_log_metric("MSE", mean(sw_lm$residuals^2), client = client, run_id = run$run_uuid)
+
+# Save model to the registry.
+saved_model = mlflow_save_model(packaged_sw_lm, "/tmp/sw_lm")     
+versioned_model = mlflow_create_model_version("sw_lm", "/tmp/sw_lm", run_id = run$run_uuid, client = client)
+
+# Save plots.
+sw_plot = "/tmp/star_wars_characters.png"
+png(filename = sw_plot)
+plot(data$height, data$mass)
+doff = dev.off()
+logged_plot = mlflow_log_artifact(sw_plot, client = client, run_id =  run$run_uuid) 
+
+# End run.
+run_end = mlflow_end_run(run_id =  run$run_uuid, client = client)
+```
+
+Next, we will load the model from the registry.
+
+```{r mlflow-load, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+# Remove the model from the R environment.
+print(packaged_sw_lm)
+rm(packaged_sw_lm)
+
+# Load the model from the registry.
+packaged_sw_lm = mlflow_load_model("models:/sw_lm/1")
+print(packaged_sw_lm)
+```
 
 ## Session Information
 

@@ -22,6 +22,9 @@ data(iris)
 
 iris = iris |>
   rename_with(~ tolower(gsub(".", "_", .x, fixed = TRUE)))
+
+iris |>
+  head()
 ```
 
 Next, we will visualise the data.
