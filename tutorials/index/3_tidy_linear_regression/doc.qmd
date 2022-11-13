@@ -23,7 +23,9 @@ library(mlflow)
 mlflow::mlflow_set_tracking_uri("http://mlflow:5000")
 library(tidyverse)
 
-data = dplyr::starwars
+data = dplyr::starwars |>
+   mutate_if(is.numeric, ~ replace_na(.,0))
+
 data |>
   head()
 ```
@@ -63,6 +65,18 @@ mlflow_log_param("Intercept", sw_lm$coefficients["(Intercept)"], client = client
 mlflow_log_param("mass", sw_lm$coefficients["mass"], client = client, run_id = run$run_uuid)
 mlflow_log_metric("MSE", mean(sw_lm$residuals^2), client = client, run_id = run$run_uuid)
 
+# Log predictions and actual values
+sw_lm |>
+  predict() |>
+  iwalk(
+    ~ mlflow_log_metric("prediction", .x, step = as.numeric(.y), client = client, run_id = run$run_uuid)
+    )
+
+data$height |> 
+  iwalk(
+    ~ mlflow_log_metric("actual",  .x, step = .y, client = client, run_id = run$run_uuid)
+    )
+
 # Save model to the registry.
 saved_model = mlflow_save_model(packaged_sw_lm, "/tmp/sw_lm")     
 versioned_model = mlflow_create_model_version("sw_lm", "/tmp/sw_lm", run_id = run$run_uuid, client = client)
@@ -73,6 +87,11 @@ png(filename = sw_plot)
 plot(data$height, data$mass)
 doff = dev.off()
 logged_plot = mlflow_log_artifact(sw_plot, client = client, run_id =  run$run_uuid) 
+
+# Save tibble
+data_csv = "/tmp/star_wars_characters.csv"
+write_csv(data, data_csv)
+logged_csv = mlflow_log_artifact(data_csv, client = client, run_id =  run$run_uuid) 
 
 # End run.
 run_end = mlflow_end_run(run_id =  run$run_uuid, client = client)
