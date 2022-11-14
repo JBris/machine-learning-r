@@ -11,17 +11,25 @@ format:
 
 We will demonstrate how to fit a linear regression model package to the Star Wars dataset.
 
-Subsequently, we will track the experiment and save the model to an MLFlow server. We use the *carrier* package to serialize the model.
+Subsequently, we will track the experiment and save the model to an MLFlow server. We use the *carrier* package to serialize the model (write an in-memory object to file).
 
 ```{r setup, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = FALSE}
+
+# Constants
+
+MLFLOW_URL = "http://mlflow:5000"
+
+# Imports
 
 library(carrier)
 library(knitr)
 library(reticulate)
 use_condaenv("r-mlflow-1.30.0")
 library(mlflow)
-mlflow::mlflow_set_tracking_uri("http://mlflow:5000")
+mlflow::mlflow_set_tracking_uri(MLFLOW_URL)
 library(tidyverse)
+
+# Load data
 
 data = dplyr::starwars |>
    mutate_if(is.numeric, ~ replace_na(.,0))
@@ -31,6 +39,8 @@ data |>
 ```
 
 ## Minio
+
+Minio is an object datavase th
 
 We need to create a minio bucket. All of our files will be saved into this bucket.
 
@@ -94,6 +104,8 @@ minioClient.set_bucket_policy('mlflow', json.dumps(policy))
 
 ## MLFlow
 
+### Registering Models
+
 We will first create a new model in the model registry.
 
 ```{r mlflow-register, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
@@ -107,6 +119,8 @@ mlflow_create_registered_model("sw_lm", client = client, description = "Perform 
 ```
 
 We will next execute an MLFlow run.
+
+### MLFlow Run
 
 ```{r mlflow-run, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
 
@@ -140,8 +154,11 @@ data$height |>
     )
 
 # Save model to the registry.
-saved_model = mlflow_save_model(packaged_sw_lm, "/tmp/sw_lm")     
-versioned_model = mlflow_create_model_version("sw_lm", "/tmp/sw_lm", run_id = run$run_uuid, client = client)
+crated_model = "/tmp/sw_lm"
+saved_model = mlflow_save_model(packaged_sw_lm, crated_model)  
+logged_model = mlflow_log_artifact(crated_model, client = client, run_id =  run$run_uuid) 
+
+versioned_model = mlflow_create_model_version("sw_lm", run$artifact_uri, run_id = run$run_uuid, client = client)
 
 # Save plots.
 sw_plot = "/tmp/star_wars_characters.png"
@@ -159,6 +176,8 @@ logged_csv = mlflow_log_artifact(data_csv, client = client, run_id =  run$run_uu
 run_end = mlflow_end_run(run_id =  run$run_uuid, client = client)
 ```
 
+### Loading and Serving Models
+
 Next, we will load the model from the registry.
 
 ```{r mlflow-load, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
@@ -170,6 +189,16 @@ rm(packaged_sw_lm)
 # Load the model from the registry.
 packaged_sw_lm = mlflow_load_model("models:/sw_lm/1")
 print(packaged_sw_lm)
+```
+
+Finally, we will demonstrate how to deploy the model using a model-as-a-service approach.
+
+```{bash mlflow-serve, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE, eval = FALSE}
+
+export MLFLOW_TRACKING_URI=http://mlflow:5000
+
+# ping http://0.0.0.0:9000/invocations
+mlflow models serve -m "models:/sw_lm/1" -h 0.0.0.0 -p 9000 
 ```
 
 ## Session Information

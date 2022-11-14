@@ -49,6 +49,8 @@ lm_mod |>
   summary()
 ```
 
+### Diagnostics
+
 Next, we will view some diagnostics.
 
 ```{r iris-diagnostics, include = TRUE, echo = FALSE, message = FALSE, warning = TRUE, cache = TRUE}
