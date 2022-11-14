@@ -210,6 +210,50 @@ mlflow models serve -m "models:/sw_lm/1" -h 0.0.0.0 -p 9000
 
 You can also run the following command to deploy the model in a Docker container: *docker compose -f docker-compose-serve-model.yaml up*
 
+## Grafana
+
+Next, access the Grafana home page. This application will allow you to build your own dashboards.
+
+*Go to Configuration -\> Data sources -\> Add data source.*
+
+![Grafana Configuration Page](images/1_configuration.png){width="624"}
+
+*Select PostgreSQL as the data source. Enter the following values into the web form.*
+
+-   Host: postgres:5432
+
+-   Database: docker_r\_mlops
+
+-   User: user (Default)
+
+-   Password: pass (Default)
+
+-   TLS/SSL Mode: Disable
+
+![Grafana Data Source Web Form](images/2_grafana_web_form.png){width="614"}
+
+*Click Save & test.*
+
+*Next, go to Create -\> Dashboard -\> Add a new panel. Create the following query.*
+
+-   Database: metrics
+
+-   Time column: step
+
+-   Select: Column:value
+
+-   Where: Remove the Macro: \$\_\_unixEpochFilter
+
+*Click Zoom to data. Your dashboard should look like the below. Click Apply to save the dashboard.*
+
+![Grafana Dashboard](images/3_grafana_dashboard.png){width="607"}
+
+*View the dashboard again. Click Table view.*
+
+![Table View](images/4_table_view.png){width="608"}
+
+*Congratulations. Feel free to add new panels and experiment with the various plot types supported by Grafana.*
+
 ## Session Information
 
 ```{r session-info, include = TRUE, echo = FALSE, message = FALSE, warning = TRUE, cache = FALSE}

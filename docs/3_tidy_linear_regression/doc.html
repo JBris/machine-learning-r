@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Docker R MLOps - Tidymodels Linear Regression</title>
+<title>Docker R MLOps - MLFlow Linear Regression</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -133,10 +133,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 <link rel="stylesheet" href="../styles.css">
 <link rel="stylesheet" href="styles.css">
-<meta property="og:title" content="Docker R MLOps - Tidymodels Linear Regression">
+<meta property="og:title" content="Docker R MLOps - MLFlow Linear Regression">
 <meta property="og:description" content="We will demonstrate how to fit a linear regression model package to the Star Wars dataset.">
 <meta property="og:site-name" content="Docker R MLOps">
-<meta name="twitter:title" content="Docker R MLOps - Tidymodels Linear Regression">
+<meta name="twitter:title" content="Docker R MLOps - MLFlow Linear Regression">
 <meta name="twitter:description" content="We will demonstrate how to fit a linear regression model package to the Star Wars dataset.">
 <meta name="twitter:card" content="summary">
 </head>
@@ -147,7 +147,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   <header id="quarto-header" class="headroom fixed-top">
   <nav class="quarto-secondary-nav" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
     <div class="container-fluid d-flex justify-content-between">
-      <h1 class="quarto-secondary-nav-title">Tidymodels Linear Regression</h1>
+      <h1 class="quarto-secondary-nav-title">MLFlow Linear Regression</h1>
       <button type="button" class="quarto-btn-toggle btn" aria-label="Show secondary navigation">
         <i class="bi bi-chevron-right"></i>
       </button>
@@ -200,7 +200,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../3_tidy_linear_regression/doc.html" class="sidebar-item-text sidebar-link active">Tidymodels Linear Regression</a>
+  <a href="../3_tidy_linear_regression/doc.html" class="sidebar-item-text sidebar-link active">MLFlow Linear Regression</a>
   </div>
 </li>
       </ul>
@@ -215,7 +215,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
    
   <ul>
   <li><a href="#star-wars-dataset" id="toc-star-wars-dataset" class="nav-link active" data-scroll-target="#star-wars-dataset">Star Wars Dataset</a></li>
-  <li><a href="#mlflow" id="toc-mlflow" class="nav-link" data-scroll-target="#mlflow">MLFlow</a></li>
+  <li><a href="#minio" id="toc-minio" class="nav-link" data-scroll-target="#minio">Minio</a></li>
+  <li><a href="#mlflow" id="toc-mlflow" class="nav-link" data-scroll-target="#mlflow">MLFlow</a>
+  <ul class="collapse">
+  <li><a href="#registering-models" id="toc-registering-models" class="nav-link" data-scroll-target="#registering-models">Registering Models</a></li>
+  <li><a href="#mlflow-run" id="toc-mlflow-run" class="nav-link" data-scroll-target="#mlflow-run">MLFlow Run</a></li>
+  <li><a href="#loading-and-serving-models" id="toc-loading-and-serving-models" class="nav-link" data-scroll-target="#loading-and-serving-models">Loading and Serving Models</a></li>
+  </ul></li>
   <li><a href="#session-information" id="toc-session-information" class="nav-link" data-scroll-target="#session-information">Session Information</a></li>
   </ul>
 </nav>
@@ -225,7 +231,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title d-none d-lg-block">Tidymodels Linear Regression</h1>
+<h1 class="title d-none d-lg-block">MLFlow Linear Regression</h1>
 </div>
 
 
@@ -242,21 +248,30 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <section id="star-wars-dataset" class="level2">
 <h2 class="anchored" data-anchor-id="star-wars-dataset">Star Wars Dataset</h2>
 <p>We will demonstrate how to fit a linear regression model package to the Star Wars dataset.</p>
-<p>Subsequently, we will track the experiment and save the model to an MLFlow server. We use the <em>carrier</em> package to serialize the model.</p>
+<p>Subsequently, we will track the experiment and save the model to an MLFlow server. We use the <em>carrier</em> package to serialize the model (write an in-memory object to file).</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(carrier)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">use_condaenv</span>(<span class="st">"r-mlflow-1.30.0"</span>)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mlflow)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>mlflow<span class="sc">::</span><span class="fu">mlflow_set_tracking_uri</span>(<span class="st">"http://mlflow:5000"</span>)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>data <span class="ot">=</span> dplyr<span class="sc">::</span>starwars <span class="sc">|&gt;</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>   <span class="fu">mutate_if</span>(is.numeric, <span class="sc">~</span> <span class="fu">replace_na</span>(.,<span class="dv">0</span>))</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>data <span class="sc">|&gt;</span></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Constants</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>MLFLOW_URL <span class="ot">=</span> <span class="st">"http://mlflow:5000"</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Imports</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(carrier)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DataExplorer)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">use_condaenv</span>(<span class="st">"r-mlflow-1.30.0"</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mlflow)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>mlflow<span class="sc">::</span><span class="fu">mlflow_set_tracking_uri</span>(MLFLOW_URL)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Load data</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>data <span class="ot">=</span> dplyr<span class="sc">::</span>starwars <span class="sc">|&gt;</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>   <span class="fu">mutate_if</span>(is.numeric, <span class="sc">~</span> <span class="fu">replace_na</span>(.,<span class="dv">0</span>))</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>data <span class="sc">|&gt;</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 6 × 14
   name         height  mass hair_…¹ skin_…² eye_c…³ birth…⁴ sex   gender homew…⁵
@@ -273,16 +288,78 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 </div>
 </section>
+<section id="minio" class="level2">
+<h2 class="anchored" data-anchor-id="minio">Minio</h2>
+<p>Minio is an object datavase th</p>
+<p>We need to create a minio bucket. All of our files will be saved into this bucket.</p>
+<div class="cell" data-hash="doc_cache/html/minio-bucket_ff6f5bc04fd2bbc0b1ee3b1ca994a44c">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> minio <span class="im">import</span> Minio</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>minioClient <span class="op">=</span> Minio(</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  os.environ[<span class="st">'MLFLOW_S3_ENDPOINT_URL'</span>].split(<span class="st">'//'</span>)[<span class="dv">1</span>],</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  access_key<span class="op">=</span>os.environ[<span class="st">'AWS_ACCESS_KEY_ID'</span>],</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  secret_key<span class="op">=</span>os.environ[<span class="st">'AWS_SECRET_ACCESS_KEY'</span>],</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  secure <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>mlflow_names <span class="op">=</span> [ bucket.name <span class="cf">for</span> bucket <span class="kw">in</span> minioClient.list_buckets() ]</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="st">'mlflow'</span> <span class="kw">not</span> <span class="kw">in</span> mlflow_names:</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  minioClient.make_bucket(<span class="st">'mlflow'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Next, we set the bucket policy.</p>
+<div class="cell" data-hash="doc_cache/html/minio-policy_96984e1acb80c1873e34533ef74d654d">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>policy <span class="op">=</span> {</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Version"</span>:<span class="st">"2012-10-17"</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Statement"</span>:[</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Sid"</span>:<span class="st">""</span>,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Effect"</span>:<span class="st">"Allow"</span>,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Principal"</span>:{<span class="st">"AWS"</span>:<span class="st">"*"</span>},</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Action"</span>:<span class="st">"s3:GetBucketLocation"</span>,</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Resource"</span>:<span class="st">"arn:aws:s3:::mlflow"</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Sid"</span>:<span class="st">""</span>,</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Effect"</span>:<span class="st">"Allow"</span>,</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Principal"</span>:{<span class="st">"AWS"</span>:<span class="st">"*"</span>},</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Action"</span>:<span class="st">"s3:ListBucket"</span>,</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Resource"</span>:<span class="st">"arn:aws:s3:::mlflow"</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Sid"</span>:<span class="st">""</span>,</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Effect"</span>:<span class="st">"Allow"</span>,</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Principal"</span>:{<span class="st">"AWS"</span>:<span class="st">"*"</span>},</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Action"</span>:<span class="st">"s3:GetObject"</span>,</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Resource"</span>:<span class="st">"arn:aws:s3:::mlflow/*"</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Sid"</span>:<span class="st">""</span>,</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Effect"</span>:<span class="st">"Allow"</span>,</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Principal"</span>:{<span class="st">"AWS"</span>:<span class="st">"*"</span>},</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Action"</span>:<span class="st">"s3:PutObject"</span>,</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Resource"</span>:<span class="st">"arn:aws:s3:::mlflow/*"</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>  ]}</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>minioClient.set_bucket_policy(<span class="st">'mlflow'</span>, json.dumps(policy))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
 <section id="mlflow" class="level2">
 <h2 class="anchored" data-anchor-id="mlflow">MLFlow</h2>
+<section id="registering-models" class="level3">
+<h3 class="anchored" data-anchor-id="registering-models">Registering Models</h3>
 <p>We will first create a new model in the model registry.</p>
 <div class="cell" data-hash="doc_cache/html/mlflow-register_47f42e06cd268987a6d19ef880de18bd">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>client <span class="ot">=</span> <span class="fu">mlflow_client</span>()</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tryCatch</span>(</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">expr =</span> {<span class="fu">mlflow_delete_registered_model</span>(<span class="st">"sw_lm"</span>, <span class="at">client =</span> client)},</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">error =</span> <span class="cf">function</span>(x) {}</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">mlflow_create_registered_model</span>(<span class="st">"sw_lm"</span>, <span class="at">client =</span> client, <span class="at">description =</span> <span class="st">"Perform predictions using Star Wars characters."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>client <span class="ot">=</span> <span class="fu">mlflow_client</span>()</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tryCatch</span>(</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">expr =</span> {<span class="fu">mlflow_delete_registered_model</span>(<span class="st">"sw_lm"</span>, <span class="at">client =</span> client)},</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">error =</span> <span class="cf">function</span>(x) {}</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="fu">mlflow_create_registered_model</span>(<span class="st">"sw_lm"</span>, <span class="at">client =</span> client, <span class="at">description =</span> <span class="st">"Perform predictions using Star Wars characters."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>$name
 [1] "sw_lm"
@@ -298,74 +375,93 @@ $description
 </div>
 </div>
 <p>We will next execute an MLFlow run.</p>
-<div class="cell" data-hash="doc_cache/html/mlflow-run_dd140e0535597630ae49e4b9e01d5ce1">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>s3_bucket <span class="ot">=</span> <span class="st">"s3://mlflow/sw_lm"</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Begin the run.</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>experiment <span class="ot">=</span> <span class="fu">mlflow_set_experiment</span>(<span class="at">experiment_name =</span> <span class="st">"sw_lm"</span>, <span class="at">artifact_location =</span> s3_bucket) </span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>run <span class="ot">=</span> <span class="fu">mlflow_start_run</span>(<span class="at">client =</span> client)</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Save the model.</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>sw_lm <span class="ot">=</span> <span class="fu">lm</span>(height <span class="sc">~</span> mass, <span class="at">data =</span> data)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>packaged_sw_lm <span class="ot">=</span> carrier<span class="sc">::</span><span class="fu">crate</span>(</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">function</span>(x) stats<span class="sc">::</span><span class="fu">predict.lm</span>(sw_lm),</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">sw_lm =</span> sw_lm</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Log params and metrics.</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="fu">mlflow_log_param</span>(<span class="st">"Intercept"</span>, sw_lm<span class="sc">$</span>coefficients[<span class="st">"(Intercept)"</span>], <span class="at">client =</span> client, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid)</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="fu">mlflow_log_param</span>(<span class="st">"mass"</span>, sw_lm<span class="sc">$</span>coefficients[<span class="st">"mass"</span>], <span class="at">client =</span> client, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid)</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="fu">mlflow_log_metric</span>(<span class="st">"MSE"</span>, <span class="fu">mean</span>(sw_lm<span class="sc">$</span>residuals<span class="sc">^</span><span class="dv">2</span>), <span class="at">client =</span> client, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid)</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Log predictions and actual values</span></span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>sw_lm <span class="sc">|&gt;</span></span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>() <span class="sc">|&gt;</span></span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">iwalk</span>(</span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    <span class="sc">~</span> <span class="fu">mlflow_log_metric</span>(<span class="st">"prediction"</span>, .x, <span class="at">step =</span> <span class="fu">as.numeric</span>(.y), <span class="at">client =</span> client, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid)</span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>data<span class="sc">$</span>height <span class="sc">|&gt;</span> </span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">iwalk</span>(</span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    <span class="sc">~</span> <span class="fu">mlflow_log_metric</span>(<span class="st">"actual"</span>,  .x, <span class="at">step =</span> .y, <span class="at">client =</span> client, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid)</span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Save model to the registry.</span></span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>saved_model <span class="ot">=</span> <span class="fu">mlflow_save_model</span>(packaged_sw_lm, <span class="st">"/tmp/sw_lm"</span>)     </span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>versioned_model <span class="ot">=</span> <span class="fu">mlflow_create_model_version</span>(<span class="st">"sw_lm"</span>, <span class="st">"/tmp/sw_lm"</span>, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid, <span class="at">client =</span> client)</span>
-<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a><span class="co"># Save plots.</span></span>
-<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>sw_plot <span class="ot">=</span> <span class="st">"/tmp/star_wars_characters.png"</span></span>
-<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a><span class="fu">png</span>(<span class="at">filename =</span> sw_plot)</span>
-<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(data<span class="sc">$</span>height, data<span class="sc">$</span>mass)</span>
-<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>doff <span class="ot">=</span> <span class="fu">dev.off</span>()</span>
-<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>logged_plot <span class="ot">=</span> <span class="fu">mlflow_log_artifact</span>(sw_plot, <span class="at">client =</span> client, <span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="mlflow-run" class="level3">
+<h3 class="anchored" data-anchor-id="mlflow-run">MLFlow Run</h3>
+<div class="cell" data-hash="doc_cache/html/mlflow-run_fb9cad6ba99d69b9c1b168be58dc22f2">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>s3_bucket <span class="ot">=</span> <span class="st">"s3://mlflow/sw_lm"</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Begin the run.</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>experiment <span class="ot">=</span> <span class="fu">mlflow_set_experiment</span>(<span class="at">experiment_name =</span> <span class="st">"sw_lm"</span>, <span class="at">artifact_location =</span> s3_bucket) </span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>run <span class="ot">=</span> <span class="fu">mlflow_start_run</span>(<span class="at">client =</span> client)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Save the model.</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>sw_lm <span class="ot">=</span> <span class="fu">lm</span>(height <span class="sc">~</span> mass, <span class="at">data =</span> data)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>packaged_sw_lm <span class="ot">=</span> carrier<span class="sc">::</span><span class="fu">crate</span>(</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">function</span>(x) stats<span class="sc">::</span><span class="fu">predict.lm</span>(sw_lm),</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">sw_lm =</span> sw_lm</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Log params and metrics.</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="fu">mlflow_log_param</span>(<span class="st">"Intercept"</span>, sw_lm<span class="sc">$</span>coefficients[<span class="st">"(Intercept)"</span>], <span class="at">client =</span> client, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="fu">mlflow_log_param</span>(<span class="st">"mass"</span>, sw_lm<span class="sc">$</span>coefficients[<span class="st">"mass"</span>], <span class="at">client =</span> client, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="fu">mlflow_log_metric</span>(<span class="st">"MSE"</span>, <span class="fu">mean</span>(sw_lm<span class="sc">$</span>residuals<span class="sc">^</span><span class="dv">2</span>), <span class="at">client =</span> client, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid)</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Log predictions and actual values</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>sw_lm <span class="sc">|&gt;</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">predict</span>() <span class="sc">|&gt;</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">iwalk</span>(</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="sc">~</span> <span class="fu">mlflow_log_metric</span>(<span class="st">"prediction"</span>, .x, <span class="at">step =</span> <span class="fu">as.numeric</span>(.y), <span class="at">client =</span> client, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid)</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>data<span class="sc">$</span>height <span class="sc">|&gt;</span> </span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">iwalk</span>(</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    <span class="sc">~</span> <span class="fu">mlflow_log_metric</span>(<span class="st">"actual"</span>,  .x, <span class="at">step =</span> .y, <span class="at">client =</span> client, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid)</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Save model to the registry.</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>crated_model <span class="ot">=</span> <span class="st">"/tmp/sw_lm"</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>saved_model <span class="ot">=</span> <span class="fu">mlflow_save_model</span>(packaged_sw_lm, crated_model)  </span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>logged_model <span class="ot">=</span> <span class="fu">mlflow_log_artifact</span>(crated_model, <span class="at">client =</span> client, <span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>2022/11/13 22:18:07 INFO mlflow.store.artifact.cli: Logged artifact from local file /tmp/star_wars_characters.png to artifact_path=None</code></pre>
+<pre><code>2022/11/14 21:29:44 INFO mlflow.store.artifact.cli: Logged artifact from local dir /tmp/sw_lm to artifact_path=None</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save tibble</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>data_csv <span class="ot">=</span> <span class="st">"/tmp/star_wars_characters.csv"</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(data, data_csv)</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>logged_csv <span class="ot">=</span> <span class="fu">mlflow_log_artifact</span>(data_csv, <span class="at">client =</span> client, <span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>versioned_model <span class="ot">=</span> <span class="fu">mlflow_create_model_version</span>(<span class="st">"sw_lm"</span>, run<span class="sc">$</span>artifact_uri, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid, <span class="at">client =</span> client)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate report.</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>sw_report <span class="ot">=</span> data <span class="sc">|&gt;</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select_if</span>(<span class="sc">~</span> <span class="sc">!</span><span class="fu">is.list</span>(.x)) <span class="sc">|&gt;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">create_report</span>(<span class="at">output_file =</span> <span class="st">"star_wars.html"</span>, <span class="at">output_dir =</span> <span class="st">"/tmp"</span>, <span class="at">report_title =</span> <span class="st">"Star Wars Report"</span>, <span class="at">quiet =</span> T)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>logged_report <span class="ot">=</span> <span class="fu">mlflow_log_artifact</span>(<span class="st">"/tmp/star_wars.html"</span>, <span class="at">client =</span> client, <span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>2022/11/13 22:18:09 INFO mlflow.store.artifact.cli: Logged artifact from local file /tmp/star_wars_characters.csv to artifact_path=None</code></pre>
+<pre><code>2022/11/14 21:29:55 INFO mlflow.store.artifact.cli: Logged artifact from local file /tmp/star_wars.html to artifact_path=None</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># End run.</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>run_end <span class="ot">=</span> <span class="fu">mlflow_end_run</span>(<span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid, <span class="at">client =</span> client)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save plots.</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>sw_plot <span class="ot">=</span> <span class="st">"/tmp/star_wars_characters.png"</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">png</span>(<span class="at">filename =</span> sw_plot)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(data<span class="sc">$</span>height, data<span class="sc">$</span>mass)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>doff <span class="ot">=</span> <span class="fu">dev.off</span>()</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>logged_plot <span class="ot">=</span> <span class="fu">mlflow_log_artifact</span>(sw_plot, <span class="at">client =</span> client, <span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2022/11/14 21:29:56 INFO mlflow.store.artifact.cli: Logged artifact from local file /tmp/star_wars_characters.png to artifact_path=None</code></pre>
 </div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save tibble.</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>data_csv <span class="ot">=</span> <span class="st">"/tmp/star_wars_characters.csv"</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(data, data_csv)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>logged_csv <span class="ot">=</span> <span class="fu">mlflow_log_artifact</span>(data_csv, <span class="at">client =</span> client, <span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2022/11/14 21:29:57 INFO mlflow.store.artifact.cli: Logged artifact from local file /tmp/star_wars_characters.csv to artifact_path=None</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># End run.</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>run_end <span class="ot">=</span> <span class="fu">mlflow_end_run</span>(<span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid, <span class="at">client =</span> client)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="loading-and-serving-models" class="level3">
+<h3 class="anchored" data-anchor-id="loading-and-serving-models">Loading and Serving Models</h3>
 <p>Next, we will load the model from the registry.</p>
 <div class="cell" data-hash="doc_cache/html/mlflow-load_5d04ce731036e3ca14bccbc3a7bc35fd">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove the model from the R environment.</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(packaged_sw_lm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove the model from the R environment.</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(packaged_sw_lm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>&lt;crate&gt; 40.78 kB
 * function: 27.54 kB
 * `sw_lm`: 13.19 kB
 function(x) stats::predict.lm(sw_lm)</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(packaged_sw_lm)</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Load the model from the registry.</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>packaged_sw_lm <span class="ot">=</span> <span class="fu">mlflow_load_model</span>(<span class="st">"models:/sw_lm/1"</span>)</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(packaged_sw_lm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(packaged_sw_lm)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Load the model from the registry.</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>packaged_sw_lm <span class="ot">=</span> <span class="fu">mlflow_load_model</span>(<span class="st">"models:/sw_lm/1"</span>)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(packaged_sw_lm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>&lt;crate&gt; 44.77 kB
 * function: 27.54 kB
@@ -373,6 +469,16 @@ function(x) stats::predict.lm(sw_lm)</code></pre>
 function(x) stats::predict.lm(sw_lm)</code></pre>
 </div>
 </div>
+<p>Finally, we will demonstrate how to deploy the model using a model-as-a-service approach.</p>
+<div class="cell" data-hash="doc_cache/html/mlflow-serve_30197231c0f55a4fd28cbea6a14b7c39">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MLFLOW_TRACKING_URI</span><span class="op">=</span>http://mlflow:5000</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ping http://0.0.0.0:9000/predict </span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="ex">mlflow</span> models serve <span class="at">-m</span> <span class="st">"models:/sw_lm/1"</span> <span class="at">-h</span> 0.0.0.0 <span class="at">-p</span> 9000 </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>You can also run the following command to deploy the model in a Docker container: <em>docker compose -f docker-compose-serve-model.yaml up</em></p>
+</section>
 </section>
 <section id="session-information" class="level2">
 <h2 class="anchored" data-anchor-id="session-information">Session Information</h2>
@@ -398,36 +504,42 @@ attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base     
 
 other attached packages:
- [1] forcats_0.5.2   stringr_1.4.1   dplyr_1.0.10    purrr_0.3.5    
- [5] readr_2.1.3     tidyr_1.2.1     tibble_3.1.8    ggplot2_3.3.6  
- [9] tidyverse_1.3.2 mlflow_1.30.0   reticulate_1.26 knitr_1.40     
-[13] carrier_0.1.0  
+ [1] rmarkdown_2.17     data.table_1.14.4  forcats_0.5.2      stringr_1.4.1     
+ [5] dplyr_1.0.10       purrr_0.3.5        readr_2.1.3        tidyr_1.2.1       
+ [9] tibble_3.1.8       ggplot2_3.3.6      tidyverse_1.3.2    mlflow_1.30.0     
+[13] reticulate_1.26    knitr_1.40         DataExplorer_0.8.2 carrier_0.1.0     
 
 loaded via a namespace (and not attached):
- [1] httr_1.4.4          jsonlite_1.8.3      modelr_0.1.9       
- [4] assertthat_0.2.1    askpass_1.1         googlesheets4_1.0.1
- [7] cellranger_1.1.0    yaml_2.3.6          pillar_1.8.1       
-[10] backports_1.4.1     lattice_0.20-45     glue_1.6.2         
-[13] digest_0.6.30       promises_1.2.0.1    rvest_1.0.3        
-[16] colorspace_2.0-3    htmltools_0.5.3     httpuv_1.6.6       
-[19] Matrix_1.4-1        pkgconfig_2.0.3     broom_1.0.1        
-[22] haven_2.5.1         scales_1.2.1        processx_3.8.0     
-[25] later_1.3.0         tzdb_0.3.0          openssl_2.0.4      
-[28] googledrive_2.0.0   generics_0.1.3      ellipsis_0.3.2     
-[31] swagger_3.33.1      withr_2.5.0         cli_3.4.1          
-[34] crayon_1.5.2        magrittr_2.0.3      readxl_1.4.1       
-[37] evaluate_0.17       ps_1.7.2            fs_1.5.2           
-[40] fansi_1.0.3         xml2_1.3.3          tools_4.2.1        
-[43] hms_1.1.2           gargle_1.2.1        lifecycle_1.0.3    
-[46] munsell_0.5.0       reprex_2.0.2        compiler_4.2.1     
-[49] forge_0.2.0         rlang_1.0.6         grid_4.2.1         
-[52] rstudioapi_0.14     rappdirs_0.3.3      htmlwidgets_1.5.4  
-[55] base64enc_0.1-3     rmarkdown_2.17      gtable_0.3.1       
-[58] DBI_1.1.3           R6_2.5.1            ini_0.3.1          
-[61] lubridate_1.8.0     fastmap_1.1.0       utf8_1.2.2         
-[64] zeallot_0.1.0       stringi_1.7.8       Rcpp_1.0.9         
-[67] vctrs_0.5.0         png_0.1-7           dbplyr_2.2.1       
-[70] tidyselect_1.2.0    xfun_0.34          </code></pre>
+ [1] fs_1.5.2            bit64_4.0.5         lubridate_1.8.0    
+ [4] httr_1.4.4          rprojroot_2.0.3     bslib_0.4.0        
+ [7] tools_4.2.1         backports_1.4.1     utf8_1.2.2         
+[10] R6_2.5.1            DBI_1.1.3           colorspace_2.0-3   
+[13] withr_2.5.0         tidyselect_1.2.0    gridExtra_2.3      
+[16] processx_3.8.0      bit_4.0.4           curl_4.3.3         
+[19] compiler_4.2.1      cli_3.4.1           rvest_1.0.3        
+[22] swagger_3.33.1      forge_0.2.0         xml2_1.3.3         
+[25] labeling_0.4.2      sass_0.4.2          scales_1.2.1       
+[28] askpass_1.1         rappdirs_0.3.3      digest_0.6.30      
+[31] ini_0.3.1           base64enc_0.1-3     pkgconfig_2.0.3    
+[34] htmltools_0.5.3     highr_0.9           dbplyr_2.2.1       
+[37] fastmap_1.1.0       htmlwidgets_1.5.4   rlang_1.0.6        
+[40] readxl_1.4.1        rstudioapi_0.14     farver_2.1.1       
+[43] jquerylib_0.1.4     generics_0.1.3      jsonlite_1.8.3     
+[46] vroom_1.6.0         googlesheets4_1.0.1 magrittr_2.0.3     
+[49] Matrix_1.4-1        Rcpp_1.0.9          munsell_0.5.0      
+[52] fansi_1.0.3         lifecycle_1.0.3     stringi_1.7.8      
+[55] yaml_2.3.6          plyr_1.8.7          grid_4.2.1         
+[58] parallel_4.2.1      promises_1.2.0.1    crayon_1.5.2       
+[61] lattice_0.20-45     haven_2.5.1         hms_1.1.2          
+[64] zeallot_0.1.0       ps_1.7.2            pillar_1.8.1       
+[67] igraph_1.3.5        codetools_0.2-18    reshape2_1.4.4     
+[70] reprex_2.0.2        glue_1.6.2          evaluate_0.17      
+[73] modelr_0.1.9        png_0.1-7           vctrs_0.5.0        
+[76] tzdb_0.3.0          httpuv_1.6.6        networkD3_0.4      
+[79] cellranger_1.1.0    gtable_0.3.1        openssl_2.0.4      
+[82] assertthat_0.2.1    cachem_1.0.6        xfun_0.34          
+[85] broom_1.0.1         later_1.3.0         googledrive_2.0.0  
+[88] gargle_1.2.1        ellipsis_0.3.2      here_1.0.1         </code></pre>
 </div>
 </div>
 
