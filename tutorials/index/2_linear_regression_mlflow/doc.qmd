@@ -22,6 +22,7 @@ MLFLOW_URL = "http://mlflow:5000"
 # Imports
 
 library(carrier)
+library(DataExplorer)
 library(knitr)
 library(reticulate)
 use_condaenv("r-mlflow-1.30.0")
@@ -160,6 +161,12 @@ logged_model = mlflow_log_artifact(crated_model, client = client, run_id =  run$
 
 versioned_model = mlflow_create_model_version("sw_lm", run$artifact_uri, run_id = run$run_uuid, client = client)
 
+# Generate report.
+sw_report = data |>
+  select_if(~ !is.list(.x)) |>
+  create_report(output_file = "star_wars.html", output_dir = "/tmp", report_title = "Star Wars Report", quiet = T)
+logged_report = mlflow_log_artifact("/tmp/star_wars.html", client = client, run_id =  run$run_uuid) 
+
 # Save plots.
 sw_plot = "/tmp/star_wars_characters.png"
 png(filename = sw_plot)
@@ -167,7 +174,7 @@ plot(data$height, data$mass)
 doff = dev.off()
 logged_plot = mlflow_log_artifact(sw_plot, client = client, run_id =  run$run_uuid) 
 
-# Save tibble
+# Save tibble.
 data_csv = "/tmp/star_wars_characters.csv"
 write_csv(data, data_csv)
 logged_csv = mlflow_log_artifact(data_csv, client = client, run_id =  run$run_uuid) 

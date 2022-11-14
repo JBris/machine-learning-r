@@ -29,7 +29,8 @@ services:
 
   minio:
     image: "minio/minio:${MINIO_TAG}"
-    container_name: minio
+    container_name: "${PROJECT_NAME}_minio"
+    hostname: minio
     working_dir: "/minio/storage"
     volumes:
         - ./data/minio:/minio/storage
