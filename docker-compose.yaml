@@ -73,6 +73,21 @@ services:
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
 
+  grafana:
+    image: "grafana/grafana:${GRAFANA_TAG}"
+    container_name: "${PROJECT_NAME}_grafana"
+    user: "0"
+    hostname: grafana
+    restart: always
+    stop_grace_period: 60s
+    ports:
+      - "${GRAFANA_PORT}:3000"
+    environment:
+      GF_INSTALL_PLUGINS: $GF_INSTALL_PLUGINS
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./services/grafana/grafana.ini:/etc/grafana/grafana.ini
+
   adminer:
     image: "adminer:${ADMINER_TAG}"
     container_name: "${PROJECT_NAME}_adminer"
