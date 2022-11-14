@@ -80,7 +80,7 @@ services:
     restart: always
     ports:
       - ${ADMINER_PORT}:8080
-
+    
 networks:
   default:
       name: docker-r-mlops

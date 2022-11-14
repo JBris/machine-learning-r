@@ -204,9 +204,11 @@ Finally, we will demonstrate how to deploy the model using a model-as-a-service 
 
 export MLFLOW_TRACKING_URI=http://mlflow:5000
 
-# ping http://0.0.0.0:9000/invocations
+# ping http://0.0.0.0:9000/predict 
 mlflow models serve -m "models:/sw_lm/1" -h 0.0.0.0 -p 9000 
 ```
+
+You can also run the following command to deploy the model in a Docker container: *docker compose -f docker-compose-serve-model.yaml up*
 
 ## Session Information
 
