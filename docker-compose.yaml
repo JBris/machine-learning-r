@@ -95,7 +95,33 @@ services:
     restart: always
     ports:
       - ${ADMINER_PORT}:8080
-    
+
+  rstudio_mlflow_serve_lm:
+    image: "ghcr.io/${CONTAINER_REG_USER}/${CONTAINER_TIDYMODELS_REG_NAME}:latest"
+    container_name: "${PROJECT_NAME}_rstudio_mlflow_serve"
+    hostname: rstudio_mlflow_serve
+    stop_grace_period: 60s
+    restart: always
+    environment:
+      USER: $R_STUDIO_USER
+      PASSWORD: $R_STUDIO_PASSWORD
+      ROOT: "TRUE"
+      DISABLE_AUTH: "TRUE"
+      R_SEED: $R_SEED
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+    ports:
+      - ${R_STUDIO_MLFLOW_SERVE_PORT}:9000 
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./tutorials:/home/user
+    command: conda run -n r-mlflow-1.30.0 mlflow models serve -m "models:/sw_lm/1" -h 0.0.0.0 -p 9000 
+
 networks:
   default:
       name: docker-r-mlops
