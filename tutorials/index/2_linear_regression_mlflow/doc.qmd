@@ -41,7 +41,7 @@ data |>
 
 ## Minio
 
-Minio is an object datavase th
+Minio is an object database that is used to store files within a centralised location.
 
 We need to create a minio bucket. All of our files will be saved into this bucket.
 

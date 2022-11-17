@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.1.189">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Docker R MLOps - Integrating Tidymodels and Targets</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../3_tidy_linear_regression/doc.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+<script type="application/json" class="js-hypothesis-config">
+{
+  "theme": "clean",
+  "openSidebar": false
+}
+</script>
+<script async="" src="https://hypothes.is/embed.js"></script>
+<script src="../site_libs/htmlwidgets-1.5.4/htmlwidgets.js"></script>
+<link href="../site_libs/vis-9.1.0/vis-network.min.css" rel="stylesheet">
+<script src="../site_libs/vis-9.1.0/vis-network.min.js"></script>
+<script src="../site_libs/visNetwork-binding-2.1.2/visNetwork.js"></script>
+
+
+<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="Docker R MLOps - Integrating Tidymodels and Targets">
+<meta property="og:description" content="We will reuse the Star Wars dataset yet again, and demonstrate how to integrate Tidymodels with targets. Targets allows users to create pipelines for general-purpose workflows.">
+<meta property="og:site-name" content="Docker R MLOps">
+<meta name="twitter:title" content="Docker R MLOps - Integrating Tidymodels and Targets">
+<meta name="twitter:description" content="We will reuse the Star Wars dataset yet again, and demonstrate how to integrate Tidymodels with targets. Targets allows users to create pipelines for general-purpose workflows.">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar docked">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+    <div class="container-fluid d-flex justify-content-between">
+      <h1 class="quarto-secondary-nav-title">Integrating Tidymodels and Targets</h1>
+      <button type="button" class="quarto-btn-toggle btn" aria-label="Show secondary navigation">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">Docker R MLOps</a> 
+    </div>
+      </div>
+      <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+      </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">Basics</a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../1_linear_regression/doc.html" class="sidebar-item-text sidebar-link">Linear Regression</a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../2_linear_regression_mlflow/doc.html" class="sidebar-item-text sidebar-link">MLFlow Linear Regression</a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">Tidymodels</a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../3_tidy_linear_regression/doc.html" class="sidebar-item-text sidebar-link">Linear Regression with Tidymodels</a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../4_tidymodels_targets/doc.html" class="sidebar-item-text sidebar-link active">Integrating Tidymodels and Targets</a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#star-wars-dataset" id="toc-star-wars-dataset" class="nav-link active" data-scroll-target="#star-wars-dataset">Star Wars Dataset</a></li>
+  <li><a href="#tidymodels" id="toc-tidymodels" class="nav-link" data-scroll-target="#tidymodels">Tidymodels</a>
+  <ul class="collapse">
+  <li><a href="#recipes" id="toc-recipes" class="nav-link" data-scroll-target="#recipes">Recipes</a></li>
+  <li><a href="#random-forest" id="toc-random-forest" class="nav-link" data-scroll-target="#random-forest">Random Forest</a></li>
+  <li><a href="#workflow" id="toc-workflow" class="nav-link" data-scroll-target="#workflow">Workflow</a></li>
+  <li><a href="#hyperparameter-tuning" id="toc-hyperparameter-tuning" class="nav-link" data-scroll-target="#hyperparameter-tuning">Hyperparameter Tuning</a></li>
+  </ul></li>
+  <li><a href="#mlflow" id="toc-mlflow" class="nav-link" data-scroll-target="#mlflow">MLFlow</a>
+  <ul class="collapse">
+  <li><a href="#registering-models" id="toc-registering-models" class="nav-link" data-scroll-target="#registering-models">Registering Models</a></li>
+  <li><a href="#mlflow-run" id="toc-mlflow-run" class="nav-link" data-scroll-target="#mlflow-run">MLFlow Run</a></li>
+  <li><a href="#loading-and-serving-models" id="toc-loading-and-serving-models" class="nav-link" data-scroll-target="#loading-and-serving-models">Loading and Serving Models</a></li>
+  </ul></li>
+  <li><a href="#targets" id="toc-targets" class="nav-link" data-scroll-target="#targets">Targets</a></li>
+  <li><a href="#session-information" id="toc-session-information" class="nav-link" data-scroll-target="#session-information">Session Information</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title d-none d-lg-block">Integrating Tidymodels and Targets</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+    
+  </div>
+  
+
+</header>
+
+<section id="star-wars-dataset" class="level2">
+<h2 class="anchored" data-anchor-id="star-wars-dataset">Star Wars Dataset</h2>
+<p>We will reuse the Star Wars dataset yet again, and demonstrate how to integrate Tidymodels with targets. Targets allows users to create pipelines for general-purpose workflows.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Constants</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>MLFLOW_URL <span class="ot">=</span> <span class="st">"http://mlflow:5000"</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Imports</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(carrier)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(DataExplorer)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(reticulate)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">use_condaenv</span>(<span class="st">"r-mlflow-1.30.0"</span>)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mlflow)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>mlflow<span class="sc">::</span><span class="fu">mlflow_set_tracking_uri</span>(MLFLOW_URL)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(targets)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidymodels)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Load data</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>load_sw_data <span class="ot">=</span> <span class="cf">function</span>() {</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span>starwars <span class="sc">|&gt;</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="fu">c</span>(height, mass)) <span class="sc">|&gt;</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate_if</span>(is.numeric, <span class="sc">~</span> <span class="fu">replace_na</span>(.,<span class="dv">0</span>))</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>data <span class="ot">=</span> <span class="fu">load_sw_data</span>() </span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>data <span class="sc">|&gt;</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">head</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 2
+  height  mass
+   &lt;int&gt; &lt;dbl&gt;
+1    172    77
+2    167    75
+3     96    32
+4    202   136
+5    150    49
+6    178   120</code></pre>
+</div>
+</div>
+<p>We will perform an 80-20 train-test split to evaluate the generalisability of our model.</p>
+<div class="cell" data-hash="doc_cache/html/data-split_9325e3df65673d7158e424f0942b88e5">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>data_split <span class="ot">=</span> <span class="fu">initial_split</span>(data, <span class="at">prop =</span> <span class="fl">0.8</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>data_train <span class="ot">=</span> <span class="fu">training</span>(data_split)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>data_test <span class="ot">=</span> <span class="fu">testing</span>(data_split)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="tidymodels" class="level2">
+<h2 class="anchored" data-anchor-id="tidymodels">Tidymodels</h2>
+<p>Tidymodels is an R framework for machine learning modelling inspired by the functional programming style adopted by the tidyverse. In contrast with the popular <a href="https://cran.r-project.org/web/packages/caret/vignettes/caret.html">caret package</a>, Tidymodels is an entire <em>framework</em> composed of a collection of packages. Conversely, caret is a single package containing many machine learning methods and tools.</p>
+<section id="recipes" class="level3">
+<h3 class="anchored" data-anchor-id="recipes">Recipes</h3>
+<p>The purpose of Tidymodels recipes to create reproducible data preprocessing pipelines. A recipe is composed of a sequence of data preprocessing steps.</p>
+<div class="cell" data-hash="doc_cache/html/tidymodels-recipe_586198f4b3694f08a8313ee01622dd32">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>preprocess_data_recipe <span class="ot">=</span> <span class="cf">function</span>(data_train) {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">recipe</span>(data_train) <span class="sc">|&gt;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">update_role</span>(<span class="fu">everything</span>(), <span class="at">new_role =</span> <span class="st">"support"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">update_role</span>(height, <span class="at">new_role =</span> <span class="st">"outcome"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">update_role</span>(mass, <span class="at">new_role =</span> <span class="st">"predictor"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">step_impute_mean</span>(mass) <span class="sc">|&gt;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">step_normalize</span>(<span class="fu">all_numeric</span>(), <span class="sc">-</span><span class="fu">all_outcomes</span>())</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>sw_recipe <span class="ot">=</span> <span class="fu">preprocess_data_recipe</span>(data_train)  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="random-forest" class="level3">
+<h3 class="anchored" data-anchor-id="random-forest">Random Forest</h3>
+<p>One purpose of Tidymodels is to provide a layer of abstraction between different packages. For instance, there are several packages such as <em>randomForest</em> and <em>ranger</em> that implement the random forest algorithm. With Tidymodels, we can easily switch between these different implementations and specify whether we are performing regression or classification.</p>
+<div class="cell" data-hash="doc_cache/html/ranger-install_fb6db37a80213cdffb2406a46f5a7442">
+
+</div>
+<div class="cell" data-hash="doc_cache/html/tidymodels-rf_eb4b14d5cf1009d7716d4cfec2955ce1">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>get_rf <span class="ot">=</span> <span class="cf">function</span>() {</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rand_forest</span>(<span class="at">trees =</span> <span class="fu">tune</span>()) <span class="sc">|&gt;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set_engine</span>(<span class="st">"ranger"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">set_mode</span>(<span class="st">"regression"</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>sw_model <span class="ot">=</span> <span class="fu">get_rf</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="workflow" class="level3">
+<h3 class="anchored" data-anchor-id="workflow">Workflow</h3>
+<p>Next, we define a Tidymodel workflow. This allows us to combine the above preprocessing steps with a random forest regressor. Also note that Tidymodels encourages a high degree of modularity. We can save complex preprocessing recipes, and easily switch between different models.</p>
+<div class="cell" data-hash="doc_cache/html/tidymodels-workflow_15be8bdc39fb860a6ba53b5173e1cc38">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>define_workflow <span class="ot">=</span> <span class="cf">function</span>(sw_recipe, sw_model) {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  workflows<span class="sc">::</span><span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_recipe</span>(sw_recipe) <span class="sc">|&gt;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">add_model</span>(sw_model)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>sw_workflow <span class="ot">=</span> <span class="fu">define_workflow</span>(sw_recipe, sw_model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="hyperparameter-tuning" class="level3">
+<h3 class="anchored" data-anchor-id="hyperparameter-tuning">Hyperparameter Tuning</h3>
+<p>We will tune the optimal number of decision trees to use within the random forest ensemble.</p>
+<div class="cell" data-hash="doc_cache/html/tidymodels-tune_2ee460832487724ea3ee31de44c293e4">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>tree_grid <span class="ot">=</span> <span class="fu">seq</span>(<span class="dv">50</span>, <span class="dv">200</span>, <span class="at">by =</span> <span class="dv">50</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>sw_grid <span class="ot">=</span> <span class="fu">expand_grid</span>(<span class="at">trees =</span> tree_grid)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>sw_grid_results <span class="ot">=</span> sw_workflow <span class="sc">|&gt;</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tune_grid</span>(<span class="at">resamples =</span> <span class="fu">vfold_cv</span>(data_train, <span class="at">v =</span> <span class="dv">5</span>), <span class="at">grid =</span> sw_grid)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>hyperparameters <span class="ot">=</span> sw_grid_results <span class="sc">|&gt;</span> </span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select_by_pct_loss</span>(<span class="at">metric =</span> <span class="st">"rmse"</span>, <span class="at">limit =</span> <span class="dv">5</span>, trees)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="mlflow" class="level2">
+<h2 class="anchored" data-anchor-id="mlflow">MLFlow</h2>
+<p>We will next demonstrate how to integrate Tidymodels with MLFlow.</p>
+<section id="registering-models" class="level3">
+<h3 class="anchored" data-anchor-id="registering-models">Registering Models</h3>
+<p>We will first create a new model in the model registry.</p>
+<div class="cell" data-hash="doc_cache/html/mlflow-register_e9891b2026aec4c9e589f9c1ca50541b">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>client <span class="ot">=</span> <span class="fu">mlflow_client</span>()</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tryCatch</span>(</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">expr =</span> {<span class="fu">mlflow_delete_registered_model</span>(<span class="st">"sw_rf"</span>, <span class="at">client =</span> client)},</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">error =</span> <span class="cf">function</span>(x) {}</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="fu">mlflow_create_registered_model</span>(<span class="st">"sw_rf"</span>, <span class="at">client =</span> client, <span class="at">description =</span> <span class="st">"Perform predictions for Star Wars characters using Random Forest."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$name
+[1] "sw_rf"
+
+$creation_timestamp
+[1] 1.668677e+12
+
+$last_updated_timestamp
+[1] 1.668677e+12
+
+$description
+[1] "Perform predictions for Star Wars characters using Random Forest."</code></pre>
+</div>
+</div>
+<p>We will next execute an MLFlow run.</p>
+</section>
+<section id="mlflow-run" class="level3">
+<h3 class="anchored" data-anchor-id="mlflow-run">MLFlow Run</h3>
+<section id="metric-tracking" class="level4">
+<h4 class="anchored" data-anchor-id="metric-tracking">Metric Tracking</h4>
+<p>We will log the metrics and parameters for the random forest run.</p>
+<div class="cell" data-hash="doc_cache/html/mlflow-metric-tracking_39ca26002c4d4503e30b6395c16f7bb9">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># See https://mdneuzerling.com/post/tracking-tidymodels-with-mlflow/</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>log_workflow_parameters <span class="ot">=</span> <span class="cf">function</span>(workflow, client, run) {</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  spec <span class="ot">=</span> workflows<span class="sc">::</span><span class="fu">extract_spec_parsnip</span>(workflow)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  parameter_names <span class="ot">=</span> <span class="fu">names</span>(spec<span class="sc">$</span>args)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  parameter_values <span class="ot">=</span> <span class="fu">lapply</span>(spec<span class="sc">$</span>args, rlang<span class="sc">::</span>get_expr)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="fu">seq_along</span>(spec<span class="sc">$</span>args)) {</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    parameter_name <span class="ot">=</span> parameter_names[[i]]</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    parameter_value <span class="ot">=</span> parameter_values[[i]]</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(parameter_value)) {</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mlflow_log_param</span>(parameter_name, parameter_value, <span class="at">client =</span> client, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  workflow</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>log_metrics <span class="ot">=</span> <span class="cf">function</span>(metrics, <span class="at">estimator =</span> <span class="st">"standard"</span>, client, run) {</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>  metrics <span class="sc">|&gt;</span> </span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(.estimator <span class="sc">==</span> estimator) <span class="sc">|&gt;</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pmap</span>(</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>      <span class="cf">function</span>(.metric, .estimator, .estimate) {</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>        <span class="fu">mlflow_log_metric</span>(.metric, .estimate, <span class="at">client =</span> client, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid)  </span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>  metrics</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Next, we will initiate the tidymodels run with MLFlow integration.</p>
+<div class="cell" data-hash="doc_cache/html/mlflow-run_291b957bbce59334aba687f773017580">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>s3_bucket <span class="ot">=</span> <span class="st">"s3://mlflow/sw_rf"</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Begin the run.</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>experiment <span class="ot">=</span> <span class="fu">mlflow_set_experiment</span>(<span class="at">experiment_name =</span> <span class="st">"sw_rf"</span>, <span class="at">artifact_location =</span> s3_bucket) </span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>run <span class="ot">=</span> <span class="fu">mlflow_start_run</span>(<span class="at">client =</span> client)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Save the model.</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>train_rf <span class="ot">=</span> <span class="cf">function</span>(data_train, sw_workflow, hyperparameters, client, run) {</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  sw_workflow <span class="sc">|&gt;</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">finalize_workflow</span>(hyperparameters) <span class="sc">|&gt;</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">log_workflow_parameters</span>(<span class="at">client =</span> client, <span class="at">run =</span> run) <span class="sc">|&gt;</span> </span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fit</span>(data_train)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>sw_rf <span class="ot">=</span> <span class="fu">train_rf</span>(data_train, sw_workflow, hyperparameters, client, run)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>package_rf <span class="ot">=</span> <span class="cf">function</span>(sw_rf) {</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>  carrier<span class="sc">::</span><span class="fu">crate</span>(</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">function</span>(x) workflows<span class="sc">:::</span><span class="fu">predict.workflow</span>(sw_rf, x),</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">sw_rf =</span> sw_rf</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>packaged_sw_rf <span class="ot">=</span> <span class="fu">package_rf</span>(sw_rf)</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Log params and metrics.</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>get_metrics <span class="ot">=</span> <span class="cf">function</span>(sw_rf, data_test, client, run) {</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>  sw_rf <span class="sc">|&gt;</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">predict</span>(data_test) <span class="sc">|&gt;</span></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">metric_set</span>(rmse, mae, rsq)(data_test<span class="sc">$</span>height, .pred) <span class="sc">|&gt;</span> </span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">log_metrics</span>(<span class="at">client =</span> client, <span class="at">run =</span> run)</span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>metrics <span class="ot">=</span> <span class="fu">get_metrics</span>(sw_rf, data_test, client, run)</span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Log predictions and actual values</span></span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>load_pred_actual <span class="ot">=</span> <span class="cf">function</span>(sw_rf, data_test, client, run) {</span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a>  sw_rf <span class="sc">|&gt;</span></span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">predict</span>(<span class="at">new_data =</span> data_test) <span class="sc">|&gt;</span></span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a>    (<span class="cf">function</span>(x) x<span class="sc">$</span>.pred)() <span class="sc">|&gt;</span></span>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">iwalk</span>(</span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a>      <span class="sc">~</span> <span class="fu">mlflow_log_metric</span>(<span class="st">"prediction"</span>, .x, <span class="at">step =</span> <span class="fu">as.numeric</span>(.y), </span>
+<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>                          <span class="at">client =</span> client, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid)</span>
+<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a>  data_test<span class="sc">$</span>height <span class="sc">|&gt;</span> </span>
+<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a>    <span class="fu">iwalk</span>(</span>
+<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a>      <span class="sc">~</span> <span class="fu">mlflow_log_metric</span>(<span class="st">"actual"</span>,  .x, <span class="at">step =</span> .y, </span>
+<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a>                          <span class="at">client =</span> client, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid)</span>
+<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a><span class="fu">load_pred_actual</span>(sw_rf, data_test, client, run)</span>
+<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a><span class="co"># Save model to the registry.</span></span>
+<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a>crated_model <span class="ot">=</span> <span class="st">"/tmp/sw_rf"</span></span>
+<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a>saved_model <span class="ot">=</span> <span class="fu">mlflow_save_model</span>(packaged_sw_rf, crated_model)  </span>
+<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>logged_model <span class="ot">=</span> <span class="fu">mlflow_log_artifact</span>(crated_model, <span class="at">client =</span> client, <span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2022/11/17 09:29:47 INFO mlflow.store.artifact.cli: Logged artifact from local dir /tmp/sw_rf to artifact_path=None</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>versioned_model <span class="ot">=</span> <span class="fu">mlflow_create_model_version</span>(<span class="st">"sw_rf"</span>, run<span class="sc">$</span>artifact_uri, <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid, <span class="at">client =</span> client)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate report.</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>generate_sw_report <span class="ot">=</span> <span class="cf">function</span>(data, client, run) {</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a> data <span class="sc">|&gt;</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select_if</span>(<span class="sc">~</span> <span class="sc">!</span><span class="fu">is.list</span>(.x)) <span class="sc">|&gt;</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">create_report</span>(<span class="at">output_file =</span> <span class="st">"star_wars.html"</span>, <span class="at">output_dir =</span> <span class="st">"/tmp"</span>, </span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>                  <span class="at">report_title =</span> <span class="st">"Star Wars Report"</span>, <span class="at">quiet =</span> T) </span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>  logged_report <span class="ot">=</span> <span class="fu">mlflow_log_artifact</span>(<span class="st">"/tmp/star_wars.html"</span>, </span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>                                      <span class="at">client =</span> client, <span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid) </span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>sw_report <span class="ot">=</span> <span class="fu">generate_sw_report</span>(data, client, run)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2022/11/17 09:29:53 INFO mlflow.store.artifact.cli: Logged artifact from local file /tmp/star_wars.html to artifact_path=None</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save plots.</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>plot_sw <span class="ot">=</span> <span class="cf">function</span>(data, client, run) {</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  sw_plot <span class="ot">=</span> <span class="st">"/tmp/star_wars_characters.png"</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">png</span>(<span class="at">filename =</span> sw_plot)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(data<span class="sc">$</span>height, data<span class="sc">$</span>mass)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  doff <span class="ot">=</span> <span class="fu">dev.off</span>()</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  logged_plot <span class="ot">=</span> <span class="fu">mlflow_log_artifact</span>(sw_plot, <span class="at">client =</span> client, <span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid) </span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>sw_plot <span class="ot">=</span> <span class="fu">plot_sw</span>(data, client, run)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2022/11/17 09:29:55 INFO mlflow.store.artifact.cli: Logged artifact from local file /tmp/star_wars_characters.png to artifact_path=None</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save tibble.</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>data_csv <span class="ot">=</span> <span class="st">"/tmp/star_wars_characters.csv"</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write_csv</span>(data, data_csv)</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>logged_csv <span class="ot">=</span> <span class="fu">mlflow_log_artifact</span>(data_csv, <span class="at">client =</span> client, <span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2022/11/17 09:29:56 INFO mlflow.store.artifact.cli: Logged artifact from local file /tmp/star_wars_characters.csv to artifact_path=None</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># End run.</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>run_end <span class="ot">=</span> <span class="fu">mlflow_end_run</span>(<span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid, <span class="at">client =</span> client)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="loading-and-serving-models" class="level3">
+<h3 class="anchored" data-anchor-id="loading-and-serving-models">Loading and Serving Models</h3>
+<p>Next, we will load the random forest model from the registry.</p>
+<div class="cell" data-hash="doc_cache/html/mlflow-load_4566fb979791c2522b1550e376954047">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove the model from the R environment.</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(packaged_sw_rf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>&lt;crate&gt; 165.57 kB
+* function: 55.74 kB
+* `sw_rf`: 110.06 kB
+function(x) workflows:::predict.workflow(sw_rf, x)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(packaged_sw_rf)</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Load the model from the registry.</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>packaged_sw_rf <span class="ot">=</span> <span class="fu">mlflow_load_model</span>(<span class="st">"models:/sw_rf/1"</span>)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(packaged_sw_rf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>&lt;crate&gt; 176.10 kB
+* function: 55.74 kB
+* `sw_rf`: 120.53 kB
+function(x) workflows:::predict.workflow(sw_rf, x)</code></pre>
+</div>
+</div>
+<p>Finally, we will demonstrate how to deploy the model using a model-as-a-service approach. We will first demonstrate how to launch the model using bash.</p>
+<div class="cell" data-hash="doc_cache/html/mlflow-serve_d69fb121864074b7b8c8ec069ebdf80a">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">MLFLOW_TRACKING_URI</span><span class="op">=</span>http://mlflow:5000</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ping http://0.0.0.0:9000/predict </span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="ex">mlflow</span> models serve <span class="at">-m</span> <span class="st">"models:/sw_rf/1"</span> <span class="at">-h</span> 0.0.0.0 <span class="at">-p</span> 9000 </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="targets" class="level2">
+<h2 class="anchored" data-anchor-id="targets">Targets</h2>
+<p>We will next replicate the above workflow using the targets package. Pipelines should be defined in a _targets.R file.</p>
+<div class="cell" data-hash="doc_cache/html/targets-workflow_deda918d9a0aa9ec51cf202798846843">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># _targets.R</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(targets)</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tar_option_set</span>(<span class="at">packages =</span> <span class="fu">c</span>(</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"carrier"</span>, </span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">"DataExplorer"</span>,</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"knitr"</span>,</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">"mlflow"</span>,</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">"reticulate"</span>,</span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"tidyverse"</span>, </span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"tidymodels"</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a><span class="fu">list</span>(</span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(MLFLOW_URL, <span class="st">"http://mlflow:5000"</span>),</span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(conda_active, <span class="fu">use_condaenv</span>(<span class="st">"r-mlflow-1.30.0"</span>)),</span>
+<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(mlflow_uri, mlflow<span class="sc">::</span><span class="fu">mlflow_set_tracking_uri</span>(MLFLOW_URL)),</span>
+<span id="cb25-20"><a href="#cb25-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(data, <span class="fu">load_sw_data</span>()),</span>
+<span id="cb25-21"><a href="#cb25-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(data_split, <span class="fu">initial_split</span>(data, <span class="at">prop =</span> <span class="fl">0.8</span>)),</span>
+<span id="cb25-22"><a href="#cb25-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(data_train, <span class="fu">training</span>(data_split)),</span>
+<span id="cb25-23"><a href="#cb25-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(data_test, <span class="fu">testing</span>(data_split)),</span>
+<span id="cb25-24"><a href="#cb25-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(sw_recipe, <span class="fu">preprocess_data_recipe</span>(data_train)),</span>
+<span id="cb25-25"><a href="#cb25-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(sw_model, <span class="fu">get_rf</span>()),</span>
+<span id="cb25-26"><a href="#cb25-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(sw_workflow, <span class="fu">define_workflow</span>(sw_recipe, sw_model)),</span>
+<span id="cb25-27"><a href="#cb25-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(tree_grid, <span class="fu">seq</span>(<span class="dv">50</span>, <span class="dv">200</span>, <span class="at">by =</span> <span class="dv">50</span>)),</span>
+<span id="cb25-28"><a href="#cb25-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(sw_grid, <span class="fu">expand_grid</span>(<span class="at">trees =</span> tree_grid)),</span>
+<span id="cb25-29"><a href="#cb25-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(</span>
+<span id="cb25-30"><a href="#cb25-30" aria-hidden="true" tabindex="-1"></a>    sw_grid_results,</span>
+<span id="cb25-31"><a href="#cb25-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tune_grid</span>(sw_workflow, <span class="at">resamples =</span> <span class="fu">vfold_cv</span>(data_train, <span class="at">v =</span> <span class="dv">5</span>), <span class="at">grid =</span> sw_grid)</span>
+<span id="cb25-32"><a href="#cb25-32" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb25-33"><a href="#cb25-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(</span>
+<span id="cb25-34"><a href="#cb25-34" aria-hidden="true" tabindex="-1"></a>    hyperparameters, </span>
+<span id="cb25-35"><a href="#cb25-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select_by_pct_loss</span>(sw_grid_results, <span class="at">metric =</span> <span class="st">"rmse"</span>, <span class="at">limit =</span> <span class="dv">5</span>, trees)</span>
+<span id="cb25-36"><a href="#cb25-36" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb25-37"><a href="#cb25-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(client, <span class="fu">mlflow_client</span>()),</span>
+<span id="cb25-38"><a href="#cb25-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(s3_bucket, <span class="st">"s3://mlflow/sw_rf"</span>),</span>
+<span id="cb25-39"><a href="#cb25-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(experiment, <span class="fu">mlflow_set_experiment</span>(<span class="at">experiment_name =</span> <span class="st">"sw_rf"</span>, <span class="at">artifact_location =</span> s3_bucket)),</span>
+<span id="cb25-40"><a href="#cb25-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(experiment_id, <span class="fu">mlflow_get_experiment</span>(<span class="at">name =</span> <span class="st">"sw_rf"</span>, <span class="at">client =</span> client)<span class="sc">$</span>experiment_id),</span>
+<span id="cb25-41"><a href="#cb25-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(run, <span class="fu">mlflow_start_run</span>(<span class="at">client =</span> client, <span class="at">experiment_id =</span> experiment_id)),</span>
+<span id="cb25-42"><a href="#cb25-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(sw_rf, <span class="fu">train_rf</span>(data_train, sw_workflow, hyperparameters, client, run)),</span>
+<span id="cb25-43"><a href="#cb25-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(packaged_sw_rf, <span class="fu">package_rf</span>(sw_rf)),</span>
+<span id="cb25-44"><a href="#cb25-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(metrics, <span class="fu">get_metrics</span>(sw_rf, data_test, client, run)),</span>
+<span id="cb25-45"><a href="#cb25-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(pred_actual, <span class="fu">load_pred_actual</span>(sw_rf, data_test, client, run)),</span>
+<span id="cb25-46"><a href="#cb25-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(crated_model, <span class="st">"/tmp/sw_rf"</span>),</span>
+<span id="cb25-47"><a href="#cb25-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(saved_model, <span class="fu">mlflow_save_model</span>(packaged_sw_rf, crated_model)),</span>
+<span id="cb25-48"><a href="#cb25-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(logged_model, <span class="fu">mlflow_log_artifact</span>(crated_model, <span class="at">client =</span> client, </span>
+<span id="cb25-49"><a href="#cb25-49" aria-hidden="true" tabindex="-1"></a>                                               <span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid)),</span>
+<span id="cb25-50"><a href="#cb25-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(versioned_model, <span class="fu">mlflow_create_model_version</span>(<span class="st">"sw_rf"</span>, run<span class="sc">$</span>artifact_uri, </span>
+<span id="cb25-51"><a href="#cb25-51" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">run_id =</span> run<span class="sc">$</span>run_uuid,</span>
+<span id="cb25-52"><a href="#cb25-52" aria-hidden="true" tabindex="-1"></a>                                                          <span class="at">client =</span> client)),</span>
+<span id="cb25-53"><a href="#cb25-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(sw_report, <span class="fu">generate_sw_report</span>(data, client, run)),</span>
+<span id="cb25-54"><a href="#cb25-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(sw_plot, <span class="fu">plot_sw</span>(data, client, run)),</span>
+<span id="cb25-55"><a href="#cb25-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(data_csv, <span class="st">"/tmp/star_wars_characters.csv"</span>),</span>
+<span id="cb25-56"><a href="#cb25-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(written_csv, <span class="fu">write_csv</span>(data, data_csv)),</span>
+<span id="cb25-57"><a href="#cb25-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(logged_csv, <span class="fu">mlflow_log_artifact</span>(data_csv, </span>
+<span id="cb25-58"><a href="#cb25-58" aria-hidden="true" tabindex="-1"></a>                                             <span class="at">client =</span> client, <span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid)</span>
+<span id="cb25-59"><a href="#cb25-59" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb25-60"><a href="#cb25-60" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tar_target</span>(run_end, <span class="fu">mlflow_end_run</span>(<span class="at">run_id =</span>  run<span class="sc">$</span>run_uuid, <span class="at">client =</span> client))</span>
+<span id="cb25-61"><a href="#cb25-61" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We can visualise the workflow as a network next.</p>
+<div class="cell" data-hash="doc_cache/html/targets-vis_25ff38a24b67308cdbbcda17e1e770cf">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tar_visnetwork</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>── Attaching packages ────────────────────────────────────── tidymodels 1.0.0 ──
+✔ broom        1.0.1      ✔ recipes      1.0.2 
+✔ dials        1.0.0      ✔ rsample      1.1.0 
+✔ dplyr        1.0.10     ✔ tibble       3.1.8 
+✔ ggplot2      3.3.6      ✔ tidyr        1.2.1 
+✔ infer        1.0.3      ✔ tune         1.0.1 
+✔ modeldata    1.0.1      ✔ workflows    1.1.0 
+✔ parsnip      1.0.2      ✔ workflowsets 1.0.0 
+✔ purrr        0.3.5      ✔ yardstick    1.1.0 
+── Conflicts ───────────────────────────────────────── tidymodels_conflicts() ──
+✖ purrr::discard() masks scales::discard()
+✖ dplyr::filter()  masks stats::filter()
+✖ dplyr::lag()     masks stats::lag()
+✖ recipes::step()  masks stats::step()
+• Search for functions across packages at https://www.tidymodels.org/find/
+── Attaching packages ─────────────────────────────────────── tidyverse 1.3.2 ──
+✔ readr   2.1.3     ✔ forcats 0.5.2
+✔ stringr 1.4.1     
+── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ readr::col_factor() masks scales::col_factor()
+✖ purrr::discard()    masks scales::discard()
+✖ dplyr::filter()     masks stats::filter()
+✖ stringr::fixed()    masks recipes::fixed()
+✖ dplyr::lag()        masks stats::lag()
+✖ readr::spec()       masks yardstick::spec()</code></pre>
+</div>
+<div class="cell-output-display">
+<div id="htmlwidget-f5a9a2d9130ea10af1bc" style="width:100%;height:464px;" class="visNetwork html-widget"></div>
+<script type="application/json" data-for="htmlwidget-f5a9a2d9130ea10af1bc">{"x":{"nodes":{"name":["client","conda_active","crated_model","data","data_csv","data_split","data_test","data_train","experiment","experiment_id","hyperparameters","logged_csv","logged_model","metrics","mlflow_uri","MLFLOW_URL","packaged_sw_rf","pred_actual","run","run_end","s3_bucket","saved_model","sw_grid","sw_grid_results","sw_model","sw_plot","sw_recipe","sw_report","sw_rf","sw_workflow","tree_grid","versioned_model","written_csv","log_metrics","load_sw_data","package_rf","plot_sw","log_workflow_parameters","preprocess_data_recipe","define_workflow","load_pred_actual","get_rf","generate_sw_report","get_metrics","train_rf"],"type":["stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","stem","function","function","function","function","function","function","function","function","function","function","function","function"],"status":["uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate","uptodate"],"seconds":[0,1.276,0,0.024,0,0.011,0.001,0.001,0.046,0.043,0.037,1.959,1.112,0.082,0.001,3.639,0.001,0.716,0.089,0.044,0,0.004,0.001,3.627,0.06,1.063,0.094,6.468,0.208,0.002,0.001,0.133,0.104,null,null,null,null,null,null,null,null,null,null,null,null],"bytes":[1138,44,63,463,82,706,227,422,44,53,270,197,237,210,71,71,10083,83,448,473,70,131,149,3240,311,207,904,178,10011,1223,61,279,463,null,null,null,null,null,null,null,null,null,null,null,null],"branches":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"label":["client","conda_active","crated_model","data","data_csv","data_split","data_test","data_train","experiment","experiment_id","hyperparameters","logged_csv","logged_model","metrics","mlflow_uri","MLFLOW_URL","packaged_sw_rf","pred_actual","run","run_end","s3_bucket","saved_model","sw_grid","sw_grid_results","sw_model","sw_plot","sw_recipe","sw_report","sw_rf","sw_workflow","tree_grid","versioned_model","written_csv","log_metrics","load_sw_data","package_rf","plot_sw","log_workflow_parameters","preprocess_data_recipe","define_workflow","load_pred_actual","get_rf","generate_sw_report","get_metrics","train_rf"],"color":["#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823","#354823"],"id":["client","conda_active","crated_model","data","data_csv","data_split","data_test","data_train","experiment","experiment_id","hyperparameters","logged_csv","logged_model","metrics","mlflow_uri","MLFLOW_URL","packaged_sw_rf","pred_actual","run","run_end","s3_bucket","saved_model","sw_grid","sw_grid_results","sw_model","sw_plot","sw_recipe","sw_report","sw_rf","sw_workflow","tree_grid","versioned_model","written_csv","log_metrics","load_sw_data","package_rf","plot_sw","log_workflow_parameters","preprocess_data_recipe","define_workflow","load_pred_actual","get_rf","generate_sw_report","get_metrics","train_rf"],"level":[1,0,1,2,1,3,4,4,2,2,8,4,4,10,2,1,10,10,3,4,1,11,2,7,2,4,5,4,9,6,1,4,3,1,1,1,1,1,1,1,1,1,1,2,2],"shape":["dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","dot","triangle","triangle","triangle","triangle","triangle","triangle","triangle","triangle","triangle","triangle","triangle","triangle"]},"edges":{"from":["log_metrics","log_workflow_parameters","define_workflow","sw_model","sw_recipe","client","client","experiment_id","client","data","generate_sw_report","run","client","data_test","load_pred_actual","run","sw_rf","client","data_train","hyperparameters","run","sw_workflow","train_rf","client","run","data","data_split","client","data_csv","run","load_sw_data","data_train","sw_grid","sw_workflow","client","data_test","get_metrics","run","sw_rf","client","data","plot_sw","run","s3_bucket","crated_model","packaged_sw_rf","get_rf","sw_grid_results","MLFLOW_URL","client","crated_model","run","data_split","data","data_csv","data_train","preprocess_data_recipe","client","run","tree_grid","package_rf","sw_rf"],"to":["get_metrics","train_rf","sw_workflow","sw_workflow","sw_workflow","experiment_id","run","run","sw_report","sw_report","sw_report","sw_report","pred_actual","pred_actual","pred_actual","pred_actual","pred_actual","sw_rf","sw_rf","sw_rf","sw_rf","sw_rf","sw_rf","versioned_model","versioned_model","data_split","data_test","logged_csv","logged_csv","logged_csv","data","sw_grid_results","sw_grid_results","sw_grid_results","metrics","metrics","metrics","metrics","metrics","sw_plot","sw_plot","sw_plot","sw_plot","experiment","saved_model","saved_model","sw_model","hyperparameters","mlflow_uri","logged_model","logged_model","logged_model","data_train","written_csv","written_csv","sw_recipe","sw_recipe","run_end","run_end","sw_grid","packaged_sw_rf","packaged_sw_rf"],"arrows":["to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to","to"]},"nodesToDataframe":true,"edgesToDataframe":true,"options":{"width":"100%","height":"100%","nodes":{"shape":"dot","physics":false},"manipulation":{"enabled":false},"edges":{"smooth":{"type":"cubicBezier","forceDirection":"horizontal"}},"physics":{"stabilization":false},"interaction":{"zoomSpeed":1},"layout":{"hierarchical":{"enabled":true,"direction":"LR"}}},"groups":null,"width":null,"height":null,"idselection":{"enabled":false,"style":"width: 150px; height: 26px","useLabels":true,"main":"Select by id"},"byselection":{"enabled":false,"style":"width: 150px; height: 26px","multiple":false,"hideColor":"rgba(200,200,200,0.5)","highlight":false},"main":{"text":"","style":"font-family:Georgia, Times New Roman, Times, serif;font-weight:bold;font-size:20px;text-align:center;"},"submain":null,"footer":null,"background":"rgba(0, 0, 0, 0)","highlight":{"enabled":true,"hoverNearest":false,"degree":{"from":1,"to":1},"algorithm":"hierarchical","hideColor":"rgba(200,200,200,0.5)","labelOnly":true},"collapse":{"enabled":true,"fit":false,"resetHighlight":true,"clusterOptions":null,"keepCoord":true,"labelSuffix":"(cluster)"},"legend":{"width":0.2,"useGroups":false,"position":"right","ncol":1,"stepX":100,"stepY":100,"zoom":true,"nodes":{"label":["Up to date","Stem","Function"],"color":["#354823","#899DA4","#899DA4"],"shape":["dot","dot","triangle"]},"nodesToDataframe":true},"tooltipStay":300,"tooltipStyle":"position: fixed;visibility:hidden;padding: 5px;white-space: nowrap;font-family: verdana;font-size:14px;font-color:#000000;background-color: #f5f4ed;-moz-border-radius: 3px;-webkit-border-radius: 3px;border-radius: 3px;border: 1px solid #808074;box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2);"},"evals":[],"jsHooks":[]}</script>
+</div>
+</div>
+<p>We can execute the pipeline using the <em>tar_make()</em> function.</p>
+<div class="cell" data-hash="doc_cache/html/targets-make_ee432f934850077f30347eb5270037e6">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tar_make</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="session-information" class="level2">
+<h2 class="anchored" data-anchor-id="session-information">Session Information</h2>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>R version 4.2.1 (2022-06-23)
+Platform: x86_64-pc-linux-gnu (64-bit)
+Running under: Ubuntu 20.04.5 LTS
+
+Matrix products: default
+BLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.9.0
+LAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.9.0
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] forcats_0.5.2      stringr_1.4.1      readr_2.1.3        tidyverse_1.3.2   
+ [5] yardstick_1.1.0    workflowsets_1.0.0 workflows_1.1.0    tune_1.0.1        
+ [9] tidyr_1.2.1        tibble_3.1.8       rsample_1.1.0      recipes_1.0.2     
+[13] purrr_0.3.5        parsnip_1.0.2      modeldata_1.0.1    infer_1.0.3       
+[17] ggplot2_3.3.6      dplyr_1.0.10       dials_1.0.0        scales_1.2.1      
+[21] broom_1.0.1        tidymodels_1.0.0   targets_0.13.5     mlflow_1.30.0     
+[25] reticulate_1.26    knitr_1.40         DataExplorer_0.8.2 carrier_0.1.0     
+
+loaded via a namespace (and not attached):
+  [1] googledrive_2.0.0   colorspace_2.0-3    ellipsis_0.3.2     
+  [4] class_7.3-20        fs_1.5.2            base64enc_0.1-3    
+  [7] rstudioapi_0.14     listenv_0.8.0       furrr_0.3.1        
+ [10] prodlim_2019.11.13  fansi_1.0.3         lubridate_1.8.0    
+ [13] xml2_1.3.3          codetools_0.2-18    splines_4.2.1      
+ [16] zeallot_0.1.0       jsonlite_1.8.3      dbplyr_2.2.1       
+ [19] png_0.1-7           compiler_4.2.1      httr_1.4.4         
+ [22] backports_1.4.1     assertthat_0.2.1    Matrix_1.4-1       
+ [25] fastmap_1.1.0       gargle_1.2.1        cli_3.4.1          
+ [28] later_1.3.0         htmltools_0.5.3     tools_4.2.1        
+ [31] igraph_1.3.5        gtable_0.3.1        glue_1.6.2         
+ [34] rappdirs_0.3.3      Rcpp_1.0.9          cellranger_1.1.0   
+ [37] DiceDesign_1.9      vctrs_0.5.0         iterators_1.0.14   
+ [40] timeDate_4021.106   gower_1.0.0         xfun_0.34          
+ [43] globals_0.16.1      networkD3_0.4       ps_1.7.2           
+ [46] rvest_1.0.3         lifecycle_1.0.3     googlesheets4_1.0.1
+ [49] future_1.28.0       MASS_7.3-57         ipred_0.9-13       
+ [52] hms_1.1.2           promises_1.2.0.1    parallel_4.2.1     
+ [55] swagger_3.33.1      yaml_2.3.6          forge_0.2.0        
+ [58] gridExtra_2.3       rpart_4.1.16        stringi_1.7.8      
+ [61] foreach_1.5.2       lhs_1.1.5           hardhat_1.2.0      
+ [64] lava_1.7.0          rlang_1.0.6         pkgconfig_2.0.3    
+ [67] evaluate_0.17       lattice_0.20-45     htmlwidgets_1.5.4  
+ [70] processx_3.8.0      tidyselect_1.2.0    parallelly_1.32.1  
+ [73] magrittr_2.0.3      R6_2.5.1            generics_0.1.3     
+ [76] base64url_1.4       ini_0.3.1           DBI_1.1.3          
+ [79] haven_2.5.1         pillar_1.8.1        withr_2.5.0        
+ [82] survival_3.3-1      nnet_7.3-17         future.apply_1.9.1 
+ [85] crayon_1.5.2        modelr_0.1.9        utf8_1.2.2         
+ [88] tzdb_0.3.0          rmarkdown_2.17      readxl_1.4.1       
+ [91] grid_4.2.1          data.table_1.14.4   callr_3.7.2        
+ [94] reprex_2.0.2        digest_0.6.30       httpuv_1.6.6       
+ [97] openssl_2.0.4       munsell_0.5.0       GPfit_1.0-8        
+[100] askpass_1.1        </code></pre>
+</div>
+</div>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    setTimeout(function() {
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../3_tidy_linear_regression/doc.html" class="pagination-link">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Linear Regression with Tidymodels</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+</body></html>

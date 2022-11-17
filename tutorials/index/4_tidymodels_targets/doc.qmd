@@ -1,0 +1,385 @@
+---
+title: "Integrating Tidymodels and Targets"
+format:
+  html:
+    toc: true
+    html-math-method: katex
+    css: styles.css
+---
+
+## Star Wars Dataset
+
+We will reuse the Star Wars dataset yet again, and demonstrate how to integrate Tidymodels with targets. Targets allows users to create pipelines for general-purpose workflows.
+
+```{r setup, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = FALSE}
+
+# Constants
+
+MLFLOW_URL = "http://mlflow:5000"
+
+# Imports
+
+library(carrier)
+library(DataExplorer)
+library(knitr)
+library(reticulate)
+use_condaenv("r-mlflow-1.30.0")
+library(mlflow)
+mlflow::mlflow_set_tracking_uri(MLFLOW_URL)
+library(targets)
+library(tidymodels)
+library(tidyverse)
+
+# Load data
+
+load_sw_data = function() {
+  dplyr::starwars |>
+    select(c(height, mass)) |>
+    mutate_if(is.numeric, ~ replace_na(.,0))
+}
+
+data = load_sw_data() 
+data |>
+  head()
+```
+
+We will perform an 80-20 train-test split to evaluate the generalisability of our model.
+
+```{r data-split, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+data_split = initial_split(data, prop = 0.8)
+data_train = training(data_split)
+data_test = testing(data_split)
+```
+
+## Tidymodels
+
+Tidymodels is an R framework for machine learning modelling inspired by the functional programming style adopted by the tidyverse. In contrast with the popular [caret package](https://cran.r-project.org/web/packages/caret/vignettes/caret.html), Tidymodels is an entire *framework* composed of a collection of packages. Conversely, caret is a single package containing many machine learning methods and tools.
+
+### Recipes
+
+The purpose of Tidymodels recipes to create reproducible data preprocessing pipelines. A recipe is composed of a sequence of data preprocessing steps.
+
+```{r tidymodels-recipe, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+preprocess_data_recipe = function(data_train) {
+  recipe(data_train) |>
+    update_role(everything(), new_role = "support") |> 
+    update_role(height, new_role = "outcome") |>
+    update_role(mass, new_role = "predictor") |>
+    step_impute_mean(mass) |>
+    step_normalize(all_numeric(), -all_outcomes())
+}
+
+sw_recipe = preprocess_data_recipe(data_train)  
+```
+
+### Random Forest
+
+One purpose of Tidymodels is to provide a layer of abstraction between different packages. For instance, there are several packages such as *randomForest* and *ranger* that implement the random forest algorithm. With Tidymodels, we can easily switch between these different implementations and specify whether we are performing regression or classification.
+
+```{r ranger-install, include = TRUE, echo = FALSE, message = FALSE, warning = FALSE, cache = TRUE}
+
+if (!require("ranger")) { install.packages("ranger") }
+```
+
+```{r tidymodels-rf, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+get_rf = function() {
+  rand_forest(trees = tune()) |>
+    set_engine("ranger") |>
+    set_mode("regression")
+}
+sw_model = get_rf()
+```
+
+### Workflow
+
+Next, we define a Tidymodel workflow. This allows us to combine the above preprocessing steps with a random forest regressor. Also note that Tidymodels encourages a high degree of modularity. We can save complex preprocessing recipes, and easily switch between different models.
+
+```{r tidymodels-workflow, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+define_workflow = function(sw_recipe, sw_model) {
+  workflows::workflow() |>
+    add_recipe(sw_recipe) |>
+    add_model(sw_model)
+}
+sw_workflow = define_workflow(sw_recipe, sw_model)
+```
+
+### Hyperparameter Tuning
+
+We will tune the optimal number of decision trees to use within the random forest ensemble.
+
+```{r tidymodels-tune, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+tree_grid = seq(50, 200, by = 50)
+sw_grid = expand_grid(trees = tree_grid)
+
+sw_grid_results = sw_workflow |>
+  tune_grid(resamples = vfold_cv(data_train, v = 5), grid = sw_grid)
+
+hyperparameters = sw_grid_results |> 
+  select_by_pct_loss(metric = "rmse", limit = 5, trees)
+```
+
+## MLFlow
+
+We will next demonstrate how to integrate Tidymodels with MLFlow.
+
+### Registering Models
+
+We will first create a new model in the model registry.
+
+```{r mlflow-register, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+client = mlflow_client()
+tryCatch(
+  expr = {mlflow_delete_registered_model("sw_rf", client = client)},
+  error = function(x) {}
+)
+mlflow_create_registered_model("sw_rf", client = client, description = "Perform predictions for Star Wars characters using Random Forest.")
+```
+
+We will next execute an MLFlow run.
+
+### MLFlow Run
+
+#### Metric Tracking
+
+We will log the metrics and parameters for the random forest run.
+
+```{r mlflow-metric-tracking, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+# See https://mdneuzerling.com/post/tracking-tidymodels-with-mlflow/
+
+log_workflow_parameters = function(workflow, client, run) {
+  spec = workflows::extract_spec_parsnip(workflow)
+  parameter_names = names(spec$args)
+  parameter_values = lapply(spec$args, rlang::get_expr)
+  for(i in seq_along(spec$args)) {
+    parameter_name = parameter_names[[i]]
+    parameter_value = parameter_values[[i]]
+    if (!is.null(parameter_value)) {
+      mlflow_log_param(parameter_name, parameter_value, client = client, run_id = run$run_uuid)
+    }
+  }
+  workflow
+}
+
+log_metrics = function(metrics, estimator = "standard", client, run) {
+  metrics |> 
+    filter(.estimator == estimator) |>
+    pmap(
+      function(.metric, .estimator, .estimate) {
+        mlflow_log_metric(.metric, .estimate, client = client, run_id = run$run_uuid)  
+      }
+    )
+  metrics
+}
+```
+
+Next, we will initiate the tidymodels run with MLFlow integration.
+
+```{r mlflow-run, include = TRUE, echo = TRUE, message = FALSE, warning = FALSE, cache = TRUE}
+
+s3_bucket = "s3://mlflow/sw_rf"
+# Begin the run.
+experiment = mlflow_set_experiment(experiment_name = "sw_rf", artifact_location = s3_bucket) 
+run = mlflow_start_run(client = client)
+
+# Save the model.
+train_rf = function(data_train, sw_workflow, hyperparameters, client, run) {
+  sw_workflow |>
+    finalize_workflow(hyperparameters) |>
+    log_workflow_parameters(client = client, run = run) |> 
+    fit(data_train)
+}
+sw_rf = train_rf(data_train, sw_workflow, hyperparameters, client, run)
+
+package_rf = function(sw_rf) {
+  carrier::crate(
+    function(x) workflows:::predict.workflow(sw_rf, x),
+    sw_rf = sw_rf
+  )
+}
+packaged_sw_rf = package_rf(sw_rf)
+
+# Log params and metrics.
+get_metrics = function(sw_rf, data_test, client, run) {
+  sw_rf |>
+    predict(data_test) |>
+    metric_set(rmse, mae, rsq)(data_test$height, .pred) |> 
+    log_metrics(client = client, run = run)
+}
+metrics = get_metrics(sw_rf, data_test, client, run)
+
+# Log predictions and actual values
+load_pred_actual = function(sw_rf, data_test, client, run) {
+  sw_rf |>
+    predict(new_data = data_test) |>
+    (function(x) x$.pred)() |>
+    iwalk(
+      ~ mlflow_log_metric("prediction", .x, step = as.numeric(.y), 
+                          client = client, run_id = run$run_uuid)
+      )
+  
+  data_test$height |> 
+    iwalk(
+      ~ mlflow_log_metric("actual",  .x, step = .y, 
+                          client = client, run_id = run$run_uuid)
+      )
+}
+load_pred_actual(sw_rf, data_test, client, run)
+
+# Save model to the registry.
+crated_model = "/tmp/sw_rf"
+saved_model = mlflow_save_model(packaged_sw_rf, crated_model)  
+logged_model = mlflow_log_artifact(crated_model, client = client, run_id =  run$run_uuid) 
+
+versioned_model = mlflow_create_model_version("sw_rf", run$artifact_uri, run_id = run$run_uuid, client = client)
+
+# Generate report.
+generate_sw_report = function(data, client, run) {
+ data |>
+    select_if(~ !is.list(.x)) |>
+    create_report(output_file = "star_wars.html", output_dir = "/tmp", 
+                  report_title = "Star Wars Report", quiet = T) 
+  logged_report = mlflow_log_artifact("/tmp/star_wars.html", 
+                                      client = client, run_id =  run$run_uuid) 
+}
+sw_report = generate_sw_report(data, client, run)
+
+# Save plots.
+plot_sw = function(data, client, run) {
+  sw_plot = "/tmp/star_wars_characters.png"
+  png(filename = sw_plot)
+  plot(data$height, data$mass)
+  doff = dev.off()
+  logged_plot = mlflow_log_artifact(sw_plot, client = client, run_id =  run$run_uuid) 
+}
+sw_plot = plot_sw(data, client, run)
+
+# Save tibble.
+data_csv = "/tmp/star_wars_characters.csv"
+write_csv(data, data_csv)
+logged_csv = mlflow_log_artifact(data_csv, client = client, run_id =  run$run_uuid) 
+
+# End run.
+run_end = mlflow_end_run(run_id =  run$run_uuid, client = client)
+```
+
+### Loading and Serving Models
+
+Next, we will load the random forest model from the registry.
+
+```{r mlflow-load, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+# Remove the model from the R environment.
+print(packaged_sw_rf)
+rm(packaged_sw_rf)
+
+# Load the model from the registry.
+packaged_sw_rf = mlflow_load_model("models:/sw_rf/1")
+print(packaged_sw_rf)
+```
+
+Finally, we will demonstrate how to deploy the model using a model-as-a-service approach. We will first demonstrate how to launch the model using bash.
+
+```{bash mlflow-serve, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE, eval = FALSE}
+
+export MLFLOW_TRACKING_URI=http://mlflow:5000
+
+# ping http://0.0.0.0:9000/predict 
+mlflow models serve -m "models:/sw_rf/1" -h 0.0.0.0 -p 9000 
+```
+
+## Targets
+
+We will next replicate the above workflow using the targets package. Pipelines should be defined in a \_targets.R file.
+
+```{r targets-workflow, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE, eval = FALSE}
+
+# _targets.R
+
+library(targets)
+
+tar_option_set(packages = c(
+  "carrier", 
+  "DataExplorer",
+  "knitr",
+  "mlflow",
+  "reticulate",
+  "tidyverse", 
+  "tidymodels"
+  )
+)
+
+list(
+  tar_target(MLFLOW_URL, "http://mlflow:5000"),
+  tar_target(conda_active, use_condaenv("r-mlflow-1.30.0")),
+  tar_target(mlflow_uri, mlflow::mlflow_set_tracking_uri(MLFLOW_URL)),
+  tar_target(data, load_sw_data()),
+  tar_target(data_split, initial_split(data, prop = 0.8)),
+  tar_target(data_train, training(data_split)),
+  tar_target(data_test, testing(data_split)),
+  tar_target(sw_recipe, preprocess_data_recipe(data_train)),
+  tar_target(sw_model, get_rf()),
+  tar_target(sw_workflow, define_workflow(sw_recipe, sw_model)),
+  tar_target(tree_grid, seq(50, 200, by = 50)),
+  tar_target(sw_grid, expand_grid(trees = tree_grid)),
+  tar_target(
+    sw_grid_results,
+    tune_grid(sw_workflow, resamples = vfold_cv(data_train, v = 5), grid = sw_grid)
+  ),
+  tar_target(
+    hyperparameters, 
+    select_by_pct_loss(sw_grid_results, metric = "rmse", limit = 5, trees)
+  ),
+  tar_target(client, mlflow_client()),
+  tar_target(s3_bucket, "s3://mlflow/sw_rf"),
+  tar_target(experiment, mlflow_set_experiment(experiment_name = "sw_rf", artifact_location = s3_bucket)),
+  tar_target(experiment_id, mlflow_get_experiment(name = "sw_rf", client = client)$experiment_id),
+  tar_target(run, mlflow_start_run(client = client, experiment_id = experiment_id)),
+  tar_target(sw_rf, train_rf(data_train, sw_workflow, hyperparameters, client, run)),
+  tar_target(packaged_sw_rf, package_rf(sw_rf)),
+  tar_target(metrics, get_metrics(sw_rf, data_test, client, run)),
+  tar_target(pred_actual, load_pred_actual(sw_rf, data_test, client, run)),
+  tar_target(crated_model, "/tmp/sw_rf"),
+  tar_target(saved_model, mlflow_save_model(packaged_sw_rf, crated_model)),
+  tar_target(logged_model, mlflow_log_artifact(crated_model, client = client, 
+                                               run_id =  run$run_uuid)),
+  tar_target(versioned_model, mlflow_create_model_version("sw_rf", run$artifact_uri, 
+                                                          run_id = run$run_uuid,
+                                                          client = client)),
+  tar_target(sw_report, generate_sw_report(data, client, run)),
+  tar_target(sw_plot, plot_sw(data, client, run)),
+  tar_target(data_csv, "/tmp/star_wars_characters.csv"),
+  tar_target(written_csv, write_csv(data, data_csv)),
+  tar_target(logged_csv, mlflow_log_artifact(data_csv, 
+                                             client = client, run_id =  run$run_uuid)
+  ),
+  tar_target(run_end, mlflow_end_run(run_id =  run$run_uuid, client = client))
+)
+```
+
+We can visualise the workflow as a network next.
+
+```{r targets-vis, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+tar_visnetwork()
+```
+
+We can execute the pipeline using the *tar_make()* function.
+
+```{r targets-make, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE, eval = FALSE}
+
+tar_make()
+```
+
+## Session Information
+
+```{r session-info, include = TRUE, echo = FALSE, message = FALSE, warning = TRUE, cache = FALSE}
+
+sessionInfo()
+```

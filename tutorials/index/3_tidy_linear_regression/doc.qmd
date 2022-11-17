@@ -34,7 +34,6 @@ data = dplyr::starwars |>
   select(c(height, mass)) |>
    mutate_if(is.numeric, ~ replace_na(.,0))
 
-
 data |>
   head()
 ```
@@ -107,6 +106,8 @@ sw_grid_results = sw_workflow |>
 
 hyperparameters = sw_grid_results |> 
   select_by_pct_loss(metric = "rmse", limit = 5, trees)
+
+autoplot(sw_grid_results, metric = "rmse") 
 ```
 
 ## MLFlow
@@ -231,31 +232,6 @@ logged_csv = mlflow_log_artifact(data_csv, client = client, run_id =  run$run_uu
 
 # End run.
 run_end = mlflow_end_run(run_id =  run$run_uuid, client = client)
-```
-
-### Loading and Serving Models
-
-Next, we will load the random forest model from the registry.
-
-```{r mlflow-load, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
-
-# Remove the model from the R environment.
-print(packaged_sw_rf)
-rm(packaged_sw_rf)
-
-# Load the model from the registry.
-packaged_sw_rf = mlflow_load_model("models:/sw_rf/1")
-print(packaged_sw_rf)
-```
-
-Finally, we will demonstrate how to deploy the model using a model-as-a-service approach. We will first demonstrate how to launch the model using bash.
-
-```{bash mlflow-serve, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE, eval = FALSE}
-
-export MLFLOW_TRACKING_URI=http://mlflow:5000
-
-# ping http://0.0.0.0:9000/predict 
-mlflow models serve -m "models:/sw_rf/1" -h 0.0.0.0 -p 9000 
 ```
 
 ## Session Information
