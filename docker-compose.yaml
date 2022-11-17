@@ -98,8 +98,8 @@ services:
 
   rstudio_mlflow_serve_lm:
     image: "ghcr.io/${CONTAINER_REG_USER}/${CONTAINER_TIDYMODELS_REG_NAME}:latest"
-    container_name: "${PROJECT_NAME}_rstudio_mlflow_serve"
-    hostname: rstudio_mlflow_serve
+    container_name: "${PROJECT_NAME}_rstudio_mlflow_serve_lm"
+    hostname: rstudio_mlflow_serve_lm
     stop_grace_period: 60s
     restart: always
     environment:

@@ -1,5 +1,5 @@
 ---
-title: "MLFlow Linear Regression"
+title: "Linear Regression with Tidymodels"
 format:
   html:
     toc: true
@@ -9,9 +9,7 @@ format:
 
 ## Star Wars Dataset
 
-We will demonstrate how to fit a linear regression model package to the Star Wars dataset.
-
-Subsequently, we will track the experiment and save the model to an MLFlow server. We use the *carrier* package to serialize the model (write an in-memory object to file).
+We will reuse the Star Wars dataset, and demonstrate how to use Tidymodels.
 
 ```{r setup, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = FALSE}
 
@@ -28,82 +26,92 @@ library(reticulate)
 use_condaenv("r-mlflow-1.30.0")
 library(mlflow)
 mlflow::mlflow_set_tracking_uri(MLFLOW_URL)
+library(tidymodels)
 library(tidyverse)
 
 # Load data
-
 data = dplyr::starwars |>
+  select(c(height, mass)) |>
    mutate_if(is.numeric, ~ replace_na(.,0))
+
 
 data |>
   head()
 ```
 
-## Minio
+We will perform an 80-20 train-test split to evaluate the generalisability of our model.
 
-Minio is an object datavase th
+```{r data-split, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
 
-We need to create a minio bucket. All of our files will be saved into this bucket.
-
-```{python minio-bucket, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
-
-from minio import Minio
-import json
-import os
-
-minioClient = Minio(
-  os.environ['MLFLOW_S3_ENDPOINT_URL'].split('//')[1],
-  access_key=os.environ['AWS_ACCESS_KEY_ID'],
-  secret_key=os.environ['AWS_SECRET_ACCESS_KEY'],
-  secure = False
-)
-
-mlflow_names = [ bucket.name for bucket in minioClient.list_buckets() ]
-if 'mlflow' not in mlflow_names:
-  minioClient.make_bucket('mlflow')
+data_split = initial_split(data, prop = 0.8)
+data_train = training(data_split)
+data_test = testing(data_split)
 ```
 
-Next, we set the bucket policy.
+## Tidymodels
 
-```{python minio-policy, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+Tidymodels is an R framework for machine learning modelling inspired by the functional programming style adopted by the tidyverse. In contrast with the popular [caret package](https://cran.r-project.org/web/packages/caret/vignettes/caret.html), Tidymodels is an entire *framework* composed of a collection of packages. Conversely, caret is a single package containing many machine learning methods and tools.
 
-policy = {
-  "Version":"2012-10-17",
-  "Statement":[
-    {
-      "Sid":"",
-      "Effect":"Allow",
-      "Principal":{"AWS":"*"},
-      "Action":"s3:GetBucketLocation",
-      "Resource":"arn:aws:s3:::mlflow"
-    },
-    {
-      "Sid":"",
-      "Effect":"Allow",
-      "Principal":{"AWS":"*"},
-      "Action":"s3:ListBucket",
-      "Resource":"arn:aws:s3:::mlflow"
-    },
-    {
-      "Sid":"",
-      "Effect":"Allow",
-      "Principal":{"AWS":"*"},
-      "Action":"s3:GetObject",
-      "Resource":"arn:aws:s3:::mlflow/*"
-    },
-    {
-      "Sid":"",
-      "Effect":"Allow",
-      "Principal":{"AWS":"*"},
-      "Action":"s3:PutObject",
-      "Resource":"arn:aws:s3:::mlflow/*"
-    }
-  ]}
+### Recipes
 
-minioClient.set_bucket_policy('mlflow', json.dumps(policy))
+The purpose of Tidymodels recipes to create reproducible data preprocessing pipelines. A recipe is composed of a sequence of data preprocessing steps.
+
+```{r tidymodels-recipe, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+sw_recipe = recipe(data_train) |>
+  update_role(everything(), new_role = "support") |> 
+  update_role(height, new_role = "outcome") |>
+  update_role(mass, new_role = "predictor") |>
+  step_impute_mean(mass) |>
+  step_normalize(all_numeric(), -all_outcomes())
+```
+
+### Random Forest
+
+One purpose of Tidymodels is to provide a layer of abstraction between different packages. For instance, there are several packages such as *randomForest* and *ranger* that implement the random forest algorithm. With Tidymodels, we can easily switch between these different implementations and specify whether we are performing regression or classification.
+
+```{r ranger-install, include = TRUE, echo = FALSE, message = FALSE, warning = FALSE, cache = TRUE}
+
+if (!require("ranger")) { install.packages("ranger") }
+```
+
+```{r tidymodels-rf, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+sw_model = rand_forest(trees = tune()) |>
+  set_engine("ranger") |>
+  set_mode("regression")
+```
+
+### Workflow
+
+Next, we define a Tidymodel workflow. This allows us to combine the above preprocessing steps with a random forest regressor. Also note that Tidymodels encourages a high degree of modularity. We can save complex preprocessing recipes, and easily switch between different models.
+
+```{r tidymodels-workflow, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+sw_workflow = workflows::workflow() |>
+  add_recipe(sw_recipe) |>
+  add_model(sw_model)
+```
+
+### Hyperparameter Tuning
+
+We will tune the optimal number of decision trees to use within the random forest ensemble.
+
+```{r tidymodels-tune, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+tree_grid = seq(50, 200, by = 50)
+sw_grid = expand_grid(trees = tree_grid)
+
+sw_grid_results = sw_workflow |>
+  tune_grid(resamples = vfold_cv(data_train, v = 5), grid = sw_grid)
+
+hyperparameters = sw_grid_results |> 
+  select_by_pct_loss(metric = "rmse", limit = 5, trees)
 ```
 
 ## MLFlow
+
+We will next demonstrate how to integrate Tidymodels with MLFlow.
 
 ### Registering Models
 
@@ -113,53 +121,95 @@ We will first create a new model in the model registry.
 
 client = mlflow_client()
 tryCatch(
-  expr = {mlflow_delete_registered_model("sw_lm", client = client)},
+  expr = {mlflow_delete_registered_model("sw_rf", client = client)},
   error = function(x) {}
 )
-mlflow_create_registered_model("sw_lm", client = client, description = "Perform predictions using Star Wars characters.")
+mlflow_create_registered_model("sw_rf", client = client, description = "Perform predictions for Star Wars characters using Random Forest.")
 ```
 
 We will next execute an MLFlow run.
 
 ### MLFlow Run
 
-```{r mlflow-run, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+#### Metric Tracking
 
-s3_bucket = "s3://mlflow/sw_lm"
+We will log the metrics and parameters for the random forest run.
+
+```{r mlflow-metric-tracking, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
+
+# See https://mdneuzerling.com/post/tracking-tidymodels-with-mlflow/
+
+log_workflow_parameters = function(workflow, client, run) {
+  spec = workflows::extract_spec_parsnip(workflow)
+  parameter_names = names(spec$args)
+  parameter_values = lapply(spec$args, rlang::get_expr)
+  for(i in seq_along(spec$args)) {
+    parameter_name = parameter_names[[i]]
+    parameter_value = parameter_values[[i]]
+    if (!is.null(parameter_value)) {
+      mlflow_log_param(parameter_name, parameter_value, client = client, run_id = run$run_uuid)
+    }
+  }
+  workflow
+}
+
+log_metrics = function(metrics, estimator = "standard", client, run) {
+  metrics |> 
+    filter(.estimator == estimator) |>
+    pmap(
+      function(.metric, .estimator, .estimate) {
+        mlflow_log_metric(.metric, .estimate, client = client, run_id = run$run_uuid)  
+      }
+    )
+  metrics
+}
+```
+
+Next, we will initiate the tidymodels run with MLFlow integration.
+
+```{r mlflow-run, include = TRUE, echo = TRUE, message = FALSE, warning = FALSE, cache = TRUE}
+
+s3_bucket = "s3://mlflow/sw_rf"
 # Begin the run.
-experiment = mlflow_set_experiment(experiment_name = "sw_lm", artifact_location = s3_bucket) 
+experiment = mlflow_set_experiment(experiment_name = "sw_rf", artifact_location = s3_bucket) 
 run = mlflow_start_run(client = client)
 
 # Save the model.
-sw_lm = lm(height ~ mass, data = data)
-packaged_sw_lm = carrier::crate(
-    function(x) stats::predict.lm(sw_lm),
-    sw_lm = sw_lm
+sw_rf = sw_workflow |>
+    finalize_workflow(hyperparameters) |>
+    log_workflow_parameters(client = client, run = run) |> 
+    fit(data_train)
+
+packaged_sw_rf = carrier::crate(
+  function(x) workflows:::predict.workflow(sw_rf, x),
+  sw_rf = sw_rf
 )
 
 # Log params and metrics.
-mlflow_log_param("Intercept", sw_lm$coefficients["(Intercept)"], client = client, run_id = run$run_uuid)
-mlflow_log_param("mass", sw_lm$coefficients["mass"], client = client, run_id = run$run_uuid)
-mlflow_log_metric("MSE", mean(sw_lm$residuals^2), client = client, run_id = run$run_uuid)
+metrics = sw_rf |>
+    predict(data_test) |>
+    metric_set(rmse, mae, rsq)(data_test$height, .pred) |> 
+    log_metrics(client = client, run = run)
 
 # Log predictions and actual values
-sw_lm |>
-  predict() |>
+sw_rf |>
+  predict(new_data = data_test) |>
+  (function(x) x$.pred)() |>
   iwalk(
     ~ mlflow_log_metric("prediction", .x, step = as.numeric(.y), client = client, run_id = run$run_uuid)
     )
 
-data$height |> 
+data_test$height |> 
   iwalk(
     ~ mlflow_log_metric("actual",  .x, step = .y, client = client, run_id = run$run_uuid)
     )
 
 # Save model to the registry.
-crated_model = "/tmp/sw_lm"
-saved_model = mlflow_save_model(packaged_sw_lm, crated_model)  
+crated_model = "/tmp/sw_rf"
+saved_model = mlflow_save_model(packaged_sw_rf, crated_model)  
 logged_model = mlflow_log_artifact(crated_model, client = client, run_id =  run$run_uuid) 
 
-versioned_model = mlflow_create_model_version("sw_lm", run$artifact_uri, run_id = run$run_uuid, client = client)
+versioned_model = mlflow_create_model_version("sw_rf", run$artifact_uri, run_id = run$run_uuid, client = client)
 
 # Generate report.
 sw_report = data |>
@@ -185,30 +235,28 @@ run_end = mlflow_end_run(run_id =  run$run_uuid, client = client)
 
 ### Loading and Serving Models
 
-Next, we will load the model from the registry.
+Next, we will load the random forest model from the registry.
 
 ```{r mlflow-load, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
 
 # Remove the model from the R environment.
-print(packaged_sw_lm)
-rm(packaged_sw_lm)
+print(packaged_sw_rf)
+rm(packaged_sw_rf)
 
 # Load the model from the registry.
-packaged_sw_lm = mlflow_load_model("models:/sw_lm/1")
-print(packaged_sw_lm)
+packaged_sw_rf = mlflow_load_model("models:/sw_rf/1")
+print(packaged_sw_rf)
 ```
 
-Finally, we will demonstrate how to deploy the model using a model-as-a-service approach.
+Finally, we will demonstrate how to deploy the model using a model-as-a-service approach. We will first demonstrate how to launch the model using bash.
 
 ```{bash mlflow-serve, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE, eval = FALSE}
 
 export MLFLOW_TRACKING_URI=http://mlflow:5000
 
 # ping http://0.0.0.0:9000/predict 
-mlflow models serve -m "models:/sw_lm/1" -h 0.0.0.0 -p 9000 
+mlflow models serve -m "models:/sw_rf/1" -h 0.0.0.0 -p 9000 
 ```
-
-You can also run the following command to deploy the model in a Docker container: *docker compose -f docker-compose-serve-model.yaml up*
 
 ## Session Information
 

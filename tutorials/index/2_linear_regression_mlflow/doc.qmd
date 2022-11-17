@@ -116,7 +116,7 @@ tryCatch(
   expr = {mlflow_delete_registered_model("sw_lm", client = client)},
   error = function(x) {}
 )
-mlflow_create_registered_model("sw_lm", client = client, description = "Perform predictions using Star Wars characters.")
+mlflow_create_registered_model("sw_lm", client = client, description = "Perform predictions for Star Wars characters using linear regression.")
 ```
 
 We will next execute an MLFlow run.
