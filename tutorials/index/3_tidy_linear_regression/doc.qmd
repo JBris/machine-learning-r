@@ -1,5 +1,5 @@
 ---
-title: "Linear Regression with Tidymodels"
+title: "Regression with Tidymodels"
 format:
   html:
     toc: true
@@ -69,13 +69,8 @@ sw_recipe = recipe(data_train) |>
 
 One purpose of Tidymodels is to provide a layer of abstraction between different packages. For instance, there are several packages such as *randomForest* and *ranger* that implement the random forest algorithm. With Tidymodels, we can easily switch between these different implementations and specify whether we are performing regression or classification.
 
-```{r ranger-install, include = TRUE, echo = FALSE, message = FALSE, warning = FALSE, cache = TRUE}
-
-if (!require("ranger")) { install.packages("ranger") }
-```
-
 ```{r tidymodels-rf, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
-
+  
 sw_model = rand_forest(trees = tune()) |>
   set_engine("ranger") |>
   set_mode("regression")

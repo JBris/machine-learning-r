@@ -78,11 +78,6 @@ sw_recipe = preprocess_data_recipe(data_train)
 
 One purpose of Tidymodels is to provide a layer of abstraction between different packages. For instance, there are several packages such as *randomForest* and *ranger* that implement the random forest algorithm. With Tidymodels, we can easily switch between these different implementations and specify whether we are performing regression or classification.
 
-```{r ranger-install, include = TRUE, echo = FALSE, message = FALSE, warning = FALSE, cache = TRUE}
-
-if (!require("ranger")) { install.packages("ranger") }
-```
-
 ```{r tidymodels-rf, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE}
 
 get_rf = function() {
@@ -296,6 +291,8 @@ mlflow models serve -m "models:/sw_rf/1" -h 0.0.0.0 -p 9000
 
 ## Targets
 
+### Workflow Steps
+
 We will next replicate the above workflow using the targets package. Pipelines should be defined in a \_targets.R file.
 
 ```{r targets-workflow, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = TRUE, eval = FALSE}
@@ -362,6 +359,8 @@ list(
   tar_target(run_end, mlflow_end_run(run_id =  run$run_uuid, client = client))
 )
 ```
+
+### Pipeline
 
 We can visualise the workflow as a network next.
 

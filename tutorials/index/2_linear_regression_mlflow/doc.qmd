@@ -39,7 +39,7 @@ data |>
   head()
 ```
 
-## Minio
+## MinIO
 
 Minio is an object database that is used to store files within a centralised location.
 
