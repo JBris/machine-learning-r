@@ -19,7 +19,7 @@ website:
         contents:
           - 3_tidy_linear_regression/doc.qmd
           - 4_tidymodels_targets/doc.qmd
-
+          
   comments: 
     hypothesis:
       theme: clean

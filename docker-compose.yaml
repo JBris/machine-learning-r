@@ -96,6 +96,33 @@ services:
     ports:
       - ${ADMINER_PORT}:8080
 
+  # zookeeper:
+  #   image: "confluentinc/cp-zookeeper:${ZOOKEEPER_TAG}"
+  #   container_name: "${PROJECT_NAME}_zookeeper"
+  #   hostname: zookeeper
+  #   stop_grace_period: 60s
+  #   environment:
+  #     ZOOKEEPER_CLIENT_PORT: $ZOOKEEPER_CLIENT_PORT
+  #   ports:
+  #     - "${ZOOKEEPER_PORT}:32181"
+
+  # kafka:
+  #   image: "confluentinc/cp-kafka:${KAFKA_TAG}"
+  #   container_name: "${PROJECT_NAME}_kafka"
+  #   hostname: kafka
+  #   stop_grace_period: 60s
+  #   environment:
+  #     KAFKA_BROKER_ID: 1
+  #     KAFKA_ZOOKEEPER_CONNECT: zookeeper:32181
+  #     KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+  #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  #     KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+  #   ports:
+  #     - "${KAFKA_PORT}:9092"
+  #   restart: always
+  #   depends_on:
+  #     - zookeeper
+
   rstudio_mlflow_serve_lm:
     image: "ghcr.io/${CONTAINER_REG_USER}/${CONTAINER_TIDYMODELS_REG_NAME}:latest"
     container_name: "${PROJECT_NAME}_rstudio_mlflow_serve_lm"
