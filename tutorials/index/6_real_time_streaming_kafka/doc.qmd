@@ -1,0 +1,85 @@
+---
+title: "Real-time Data Streaming using Apache Kafka"
+format:
+  html:
+    toc: true
+    html-math-method: katex
+    css: styles.css
+---
+
+## Iris Dataset
+
+We will use the Iris dataset to demonstrate real-time data streaming.
+
+```{r setup, include = TRUE, echo = TRUE, message = FALSE, warning = TRUE, cache = FALSE}
+
+library(knitr)
+library(reticulate)
+library(tidyverse)
+use_condaenv("r-mlflow-1.30.0")
+
+data(iris)
+
+data = iris |>
+  rename_with(~ tolower(gsub(".", "_", .x, fixed = TRUE))) |>
+  filter(!species == "setosa") |>
+  select(c(petal_length, petal_width, species))
+```
+
+Next, we will visualise the data.
+
+```{r iris-plot, include = TRUE, echo = FALSE, message = FALSE, warning = TRUE, cache = TRUE}
+
+data |>
+  ggplot(aes(petal_length, petal_width, colour = species)) + 
+  geom_point() +
+  geom_smooth() +
+  ggtitle("Petal Length against Petal Width by Species")
+```
+
+## Apache Kafka
+
+Kafka is commonly used for processing streaming data in real time. It uses a publisher-subscriber pattern whereby messages are asynchronously transmitted to consumers from producers.
+
+```{python iris-plot, include = TRUE, echo = FALSE, message = FALSE, warning = TRUE, cache = TRUE}
+
+# Imports
+import json
+import sys
+import time
+from confluent_kafka import Producer
+import socket
+
+# Constants
+KAFKA_HOST = "kafka:9092"
+
+# Data
+df = r.data.drop(columns = "species")
+
+# Define Kafka producer
+def acked(err, msg):
+  if err:
+    print(f"Error: {str(msg.value())} {str(err)}")
+  else:
+    print(str(msg.value()))
+
+conf = {'bootstrap.servers': KAFKA_HOST,
+        'client.id': socket.gethostname()}
+producer = Producer(conf)
+
+while True:
+  df_sample = df.sample(n = 1, replace = True, ignore_index = True)
+  json_body = df_sample.to_dict()
+  serialised_json = json.dumps(json_body)
+  
+  time.sleep(1)
+  producer.produce("iris", key = "dataframe", value = serialised_json, callback = acked)
+  producer.flush()
+```
+
+## Session Information
+
+```{r session-info, include = TRUE, echo = FALSE, message = FALSE, warning = TRUE, cache = FALSE}
+
+sessionInfo()
+```
